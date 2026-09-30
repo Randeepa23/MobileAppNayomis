@@ -245,6 +245,7 @@ class _CartThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assetImage = imageUrl?.startsWith('assets/') == true;
     final uri = Uri.tryParse(imageUrl ?? '');
     final valid =
         uri != null &&
@@ -254,7 +255,15 @@ class _CartThumbnail extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.small),
       child: SizedBox.square(
         dimension: 82,
-        child: valid
+        child: assetImage
+            ? Image.asset(
+                imageUrl!,
+                fit: BoxFit.cover,
+                cacheWidth: 220,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (_, __, ___) => const _CartImageFallback(),
+              )
+            : valid
             ? CachedNetworkImage(
                 imageUrl: imageUrl!,
                 fit: BoxFit.cover,

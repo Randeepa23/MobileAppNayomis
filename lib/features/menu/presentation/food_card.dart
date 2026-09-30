@@ -21,11 +21,6 @@ class FoodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUri = Uri.tryParse(food.imageUrl ?? '');
-    final validImage =
-        imageUri != null &&
-        imageUri.hasScheme &&
-        (imageUri.scheme == 'http' || imageUri.scheme == 'https');
     return Semantics(
       button: true,
       label:
@@ -38,11 +33,20 @@ class FoodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AspectRatio(
-                aspectRatio: 16 / 9,
+                aspectRatio: 4 / 3,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    validImage
+                    food.hasAssetImage
+                        ? Image.asset(
+                            food.imageUrl!,
+                            fit: BoxFit.cover,
+                            cacheWidth: 720,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (_, __, ___) =>
+                                const _FoodImagePlaceholder(),
+                          )
+                        : food.hasNetworkImage
                         ? CachedNetworkImage(
                             imageUrl: food.imageUrl!,
                             fit: BoxFit.cover,

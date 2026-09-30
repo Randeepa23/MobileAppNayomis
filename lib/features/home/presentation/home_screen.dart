@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/design_system/app_colors.dart';
 import '../../../core/design_system/app_radius.dart';
 import '../../../core/design_system/app_spacing.dart';
+import '../../../core/design_system/app_typography.dart';
 import '../../../core/design_system/widgets/brand_logo.dart';
 import '../../../core/design_system/widgets/responsive_content.dart';
 import '../../../core/design_system/widgets/section_header.dart';
@@ -15,7 +16,6 @@ import '../../authentication/application/auth_controller.dart';
 import '../../cart/application/cart_controller.dart';
 import '../../menu/application/menu_providers.dart';
 import '../../menu/domain/food_item.dart';
-import 'widgets/hero_carousel.dart';
 import 'widgets/home_preview_card.dart';
 import 'widgets/preorder_card.dart';
 
@@ -99,25 +99,6 @@ class HomeScreen extends ConsumerWidget {
                 elevation: const WidgetStatePropertyAll(1),
                 onTap: () => context.go('/menu'),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: StatusBadge(
-                  label: status.message,
-                  icon: status.isOpen
-                      ? Icons.schedule_rounded
-                      : Icons.nights_stay_outlined,
-                  color: status.isOpen
-                      ? AppColors.statusSuccess
-                      : AppColors.statusOffline,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              HeroCarousel(
-                onMenu: () => context.go('/menu'),
-                onOrders: () => context.go('/orders'),
-                onPreorder: () => context.go('/menu'),
-              ),
               const SizedBox(height: AppSpacing.lg),
               PreorderCard(onPressed: () => context.go('/menu')),
               const SizedBox(height: AppSpacing.lg),
@@ -193,6 +174,19 @@ class HomeScreen extends ConsumerWidget {
                 message: 'Nayomi’s, Katunayake 11500',
                 onTap: () => context.push('/contact'),
               ),
+              const SizedBox(height: AppSpacing.lg),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: StatusBadge(
+                  label: status.message,
+                  icon: status.isOpen
+                      ? Icons.schedule_rounded
+                      : Icons.nights_stay_outlined,
+                  color: status.isOpen
+                      ? AppColors.statusSuccess
+                      : AppColors.statusOffline,
+                ),
+              ),
             ],
           ),
         ),
@@ -222,7 +216,12 @@ class _MenuHomeContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (categories.isNotEmpty) ...[
-          const SectionHeader(title: 'Food categories'),
+          SectionHeader(
+            title: 'Browse categories',
+            subtitle: 'Find your favourites faster',
+            actionLabel: 'Full menu',
+            onAction: () => context.go('/menu'),
+          ),
           const SizedBox(height: AppSpacing.xs),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -233,7 +232,11 @@ class _MenuHomeContent extends StatelessWidget {
                       padding: const EdgeInsets.only(right: AppSpacing.xs),
                       child: ActionChip(
                         label: Text(category),
-                        avatar: const Icon(Icons.restaurant_outlined, size: 18),
+                        avatar: Icon(
+                          _categoryIcon(category),
+                          size: 18,
+                          color: AppColors.brandPrimary,
+                        ),
                         onPressed: () => context.go('/menu'),
                       ),
                     ),
@@ -264,10 +267,14 @@ class _FoodStrip extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      SectionHeader(title: title, onAction: () => context.go('/menu')),
+      SectionHeader(
+        title: title,
+        actionLabel: 'View menu',
+        onAction: () => context.go('/menu'),
+      ),
       const SizedBox(height: AppSpacing.sm),
       SizedBox(
-        height: 198,
+        height: 270,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: items.length,
@@ -285,20 +292,27 @@ class _FoodPreviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final validImage =
-        Uri.tryParse(food.imageUrl ?? '')?.hasAbsolutePath == true &&
-        (food.imageUrl?.startsWith('http') ?? false);
     return SizedBox(
-      width: 172,
+      width: 208,
       child: Card(
         child: InkWell(
           onTap: () => context.push('/food/${food.id}'),
+          borderRadius: AppRadius.card,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AspectRatio(
-                aspectRatio: 16 / 8,
-                child: validImage
+                aspectRatio: 4 / 3,
+                child: food.hasAssetImage
+                    ? Image.asset(
+                        food.imageUrl!,
+                        fit: BoxFit.cover,
+                        cacheWidth: 420,
+                        filterQuality: FilterQuality.high,
+                        excludeFromSemantics: true,
+                        errorBuilder: (_, __, ___) => const _FoodPlaceholder(),
+                      )
+                    : food.hasNetworkImage
                     ? CachedNetworkImage(
                         imageUrl: food.imageUrl!,
                         fit: BoxFit.cover,
@@ -320,13 +334,40 @@ class _FoodPreviewTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const Spacer(),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
-                        formatLkr(food.price),
-                        style: const TextStyle(
-                          color: AppColors.brandPrimary,
-                          fontWeight: FontWeight.w900,
-                        ),
+                        food.category.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: AppColors.textSecondary,
+                              letterSpacing: .5,
+                            ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              formatLkr(food.price),
+                              style: AppTypography.price.copyWith(fontSize: 16),
+                            ),
+                          ),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: AppColors.surfaceTint,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: AppColors.brandSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -339,6 +380,13 @@ class _FoodPreviewTile extends StatelessWidget {
     );
   }
 }
+
+IconData _categoryIcon(String category) => switch (category.toLowerCase()) {
+  'buns' => Icons.bakery_dining_outlined,
+  'pastries' => Icons.cookie_outlined,
+  'burgers' => Icons.lunch_dining_outlined,
+  _ => Icons.restaurant_menu_rounded,
+};
 
 class _FoodPlaceholder extends StatelessWidget {
   const _FoodPlaceholder();

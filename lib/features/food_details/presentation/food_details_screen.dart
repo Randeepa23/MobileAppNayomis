@@ -1,4 +1,4 @@
- import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,11 +90,6 @@ class _Details extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uri = Uri.tryParse(item.imageUrl ?? '');
-    final validImage =
-        uri != null &&
-        uri.hasScheme &&
-        (uri.scheme == 'http' || uri.scheme == 'https');
     return ResponsiveContent(
       padding: EdgeInsets.zero,
       child: ListView(
@@ -109,7 +104,16 @@ class _Details extends StatelessWidget {
             borderRadius: AppRadius.featureCard,
             child: AspectRatio(
               aspectRatio: 4 / 3,
-              child: validImage
+              child: item.hasAssetImage
+                  ? Image.asset(
+                      item.imageUrl!,
+                      fit: BoxFit.cover,
+                      cacheWidth: 1100,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (_, __, ___) =>
+                          const _DetailImagePlaceholder(),
+                    )
+                  : item.hasNetworkImage
                   ? CachedNetworkImage(
                       imageUrl: item.imageUrl!,
                       fit: BoxFit.cover,

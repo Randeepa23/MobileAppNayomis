@@ -25,6 +25,29 @@ class FoodItem {
   final List<String> dietaryTags;
   final List<String> allergens;
 
+  bool get hasAssetImage => imageUrl?.startsWith('assets/') == true;
+
+  bool get hasNetworkImage {
+    final uri = Uri.tryParse(imageUrl ?? '');
+    return uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
+  FoodItem copyWith({String? imageUrl}) => FoodItem(
+    id: id,
+    name: name,
+    description: description,
+    category: category,
+    price: price,
+    isAvailable: isAvailable,
+    imageUrl: imageUrl ?? this.imageUrl,
+    isPopular: isPopular,
+    isNew: isNew,
+    dietaryTags: dietaryTags,
+    allergens: allergens,
+  );
+
   factory FoodItem.fromApi(Map<String, dynamic> json) {
     final dietary = json['dietary'];
     final tags = <String>[];

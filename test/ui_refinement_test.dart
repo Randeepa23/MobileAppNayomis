@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nayomis_waterfront/app/router/app_router.dart';
 import 'package:nayomis_waterfront/app/router/main_shell.dart';
+import 'package:nayomis_waterfront/core/assets/app_assets.dart';
 import 'package:nayomis_waterfront/core/design_system/app_colors.dart';
 import 'package:nayomis_waterfront/core/design_system/app_theme.dart';
 import 'package:nayomis_waterfront/core/persistence/app_database.dart';
@@ -15,13 +17,12 @@ import 'package:nayomis_waterfront/features/cart/application/cart_controller.dar
 import 'package:nayomis_waterfront/features/cart/presentation/cart_screen.dart';
 import 'package:nayomis_waterfront/features/gallery/presentation/gallery_screen.dart';
 import 'package:nayomis_waterfront/features/home/presentation/home_screen.dart';
-import 'package:nayomis_waterfront/features/home/presentation/widgets/hero_carousel.dart';
 import 'package:nayomis_waterfront/features/menu/application/menu_providers.dart';
+import 'package:nayomis_waterfront/features/menu/data/local_menu_catalog.dart';
 import 'package:nayomis_waterfront/features/menu/domain/food_item.dart';
 import 'package:nayomis_waterfront/features/menu/presentation/food_card.dart';
-import 'package:nayomis_waterfront/features/onboarding/application/onboarding_controller.dart';
-import 'package:nayomis_waterfront/features/onboarding/presentation/onboarding_screen.dart';
-import 'package:nayomis_waterfront/features/splash/presentation/splash_screen.dart';
+import 'package:nayomis_waterfront/features/menu/presentation/menu_screen.dart';
+import 'package:nayomis_waterfront/shared/widgets/app_widgets.dart';
 import 'package:timezone/data/latest.dart' as timezone_data;
 
 class _PendingAuthController extends AuthController {
@@ -39,14 +40,6 @@ class _ReadyRegistrationController extends RegistrationController {
   Future<void> build() async {}
 }
 
-class _TestOnboardingController extends OnboardingController {
-  @override
-  bool build() => false;
-
-  @override
-  Future<void> complete() async => state = true;
-}
-
 const _food = FoodItem(
   id: 'food-1',
   name: 'Backend breakfast',
@@ -54,6 +47,7 @@ const _food = FoodItem(
   category: 'Breakfast',
   price: 490,
   isAvailable: true,
+  imageUrl: AppAssets.menuChickenBurger,
   isPopular: true,
 );
 
@@ -86,48 +80,25 @@ void main() {
     expect(AppTheme.light.scaffoldBackgroundColor, AppColors.pageBackground);
   });
 
-  testWidgets('splash renders real brand and startup progress', (tester) async {
+  testWidgets('app router starts directly on login', (tester) async {
     await tester.pumpWidget(
-      _themed(
-        const SplashScreen(),
-        providerWrapper: (child) => ProviderScope(
-          overrides: [
-            authControllerProvider.overrideWith(_PendingAuthController.new),
-          ],
-          child: child,
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_PendingAuthController.new),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) => MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: ref.watch(appRouterProvider),
+          ),
         ),
       ),
     );
     await tester.pump();
 
     expect(find.text("Nayomi's Waterfront"), findsOneWidget);
-    expect(find.text('Plan Ahead. Eat Fresh. Stress Less.'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byType(Image), findsWidgets);
-  });
-
-  testWidgets('onboarding renders connected branded first page', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _themed(
-        const OnboardingScreen(),
-        providerWrapper: (child) => ProviderScope(
-          overrides: [
-            onboardingControllerProvider.overrideWith(
-              _TestOnboardingController.new,
-            ),
-          ],
-          child: child,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Browse fresh meals'), findsOneWidget);
-    expect(find.text('Skip'), findsOneWidget);
-    expect(find.text('Next'), findsOneWidget);
-    expect(find.byType(PageView), findsOneWidget);
+    expect(find.byType(TextFormField), findsNWidgets(2));
+    expect(find.byType(PageView), findsNothing);
   });
 
   testWidgets(
@@ -138,7 +109,7 @@ void main() {
           const LoginScreen(),
           providerWrapper: (child) => ProviderScope(
             overrides: [
-              authControllerProvider.overrideWith(_PendingAuthController.new),
+              authControllerProvider.overrideWith(_AnonymousAuthController.new),
             ],
             child: child,
           ),
@@ -146,9 +117,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Welcome back'), findsOneWidget);
+      expect(find.text("Nayomi's Waterfront"), findsOneWidget);
       expect(find.byType(TextFormField), findsNWidgets(2));
       expect(find.byTooltip('Show password'), findsOneWidget);
+      expect(find.text('Log in'), findsOneWidget);
+      expect(find.text("New to Nayomi's? Sign up"), findsOneWidget);
     },
   );
 
@@ -249,23 +222,6 @@ void main() {
   );
 
   testWidgets(
-    'hero carousel uses stable aspect ratio and accessible indicators',
-    (tester) async {
-      await tester.pumpWidget(
-        _themed(
-          HeroCarousel(onMenu: () {}, onOrders: () {}, onPreorder: () {}),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(PageView), findsOneWidget);
-      expect(find.byType(AspectRatio), findsWidgets);
-      expect(find.text('View orders'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
-
-  testWidgets(
     'home renders an honest empty menu state on a narrow device with large text',
     (tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -302,10 +258,52 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(find.text('Menu is empty'), findsOneWidget);
+      expect(find.byType(PageView), findsNothing);
+      await tester.dragUntilVisible(
+        find.byType(StatusBadge),
+        find.byType(ListView).first,
+        const Offset(0, -260),
+      );
+      expect(find.byType(StatusBadge), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets('home menu preview is balanced on a phone-sized screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      _themed(
+        const HomeScreen(),
+        providerWrapper: (child) => ProviderScope(
+          overrides: [
+            authControllerProvider.overrideWith(_AnonymousAuthController.new),
+            menuProvider.overrideWith((ref) async => localMenuItems),
+            cartQuantityProvider.overrideWith((ref) => 0),
+          ],
+          child: child,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('Popular items'),
+      find.byType(ListView).first,
+      const Offset(0, -260),
+    );
+
+    expect(find.text('Browse categories'), findsOneWidget);
+    expect(find.text('Popular items'), findsOneWidget);
+    expect(find.text('Fish Bun'), findsOneWidget);
+    expect(find.text('BUNS'), findsWidgets);
+    expect(find.text('Rs. 120.00'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('menu food card shows backend fields and real badges', (
     tester,
@@ -319,6 +317,35 @@ void main() {
     expect(find.text('Rs. 490.00'), findsOneWidget);
     expect(find.text('Popular'), findsOneWidget);
     expect(find.text('Available'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+  });
+
+  testWidgets('menu screen displays the local catalog with clear images', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      _themed(
+        const MenuScreen(),
+        providerWrapper: (child) => ProviderScope(
+          overrides: [
+            menuProvider.overrideWith((ref) async => localMenuItems),
+            cartQuantityProvider.overrideWith((ref) => 0),
+          ],
+          child: child,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('7 items'), findsOneWidget);
+    expect(find.text('Fish Bun'), findsOneWidget);
+    expect(find.byType(Image), findsWidgets);
+    expect(find.text('Menu is empty'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

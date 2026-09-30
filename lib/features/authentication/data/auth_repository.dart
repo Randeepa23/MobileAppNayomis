@@ -8,20 +8,6 @@ class AuthRepository {
   final AuthApi _api;
   final SessionStorage _storage;
 
-  Future<Customer?> restore() async {
-    final session = await _storage.read();
-    if (session == null || session.isExpired) {
-      await _storage.clear();
-      return null;
-    }
-    try {
-      return await _api.currentCustomer();
-    } catch (_) {
-      await _storage.clear();
-      return null;
-    }
-  }
-
   Future<Customer> login(String email, String password) async {
     try {
       final result = await _api.login(email: email, password: password);

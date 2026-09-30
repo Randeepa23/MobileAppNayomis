@@ -1,6 +1,6 @@
 # Nayomi’s Waterfront Flutter customer app
 
-Android-first Flutter application for Nayomi’s Waterfront. The default entry point is development and reaches the local Express API from the Android emulator at `http://10.0.2.2:5000/api/`.
+Android-first Flutter application for Nayomi’s Waterfront. The default entry point is development and reaches the local Express API at `http://192.168.1.47:5000/api/`.
 
 ## Environment verified on 2026-07-12
 
@@ -41,7 +41,7 @@ Entry points:
 
 Staging and production reject non-HTTPS API URLs. Override an approved URL with `--dart-define=API_BASE_URL=https://host.example/api/`; it must end with `/`.
 
-Physical Android devices cannot use `10.0.2.2`. Use the development computer’s reachable LAN IP, a secure tunnel, or a deployed HTTPS API via `API_BASE_URL`.
+Physical Android devices must be on the same network as the development computer to reach `192.168.1.47`. Use a secure tunnel or deployed HTTPS API via `API_BASE_URL` when the LAN address is unavailable.
 
 ## Android identities
 
@@ -49,18 +49,18 @@ Physical Android devices cannot use `10.0.2.2`. Use the development computer’s
 - Staging: `com.nayomis.waterfront.staging`
 - Production: `com.nayomis.waterfront`
 
-Only the development flavor permits HTTP, limited by Android network security configuration to `10.0.2.2` and `localhost`. Release signing is intentionally not committed or configured with debug credentials.
+Only the development flavor permits HTTP, limited by Android network security configuration to `192.168.1.47` and `localhost`. Release signing is intentionally not committed or configured with debug credentials.
 
 ## Architecture
 
-The app uses feature-first presentation/application/domain/data boundaries, Riverpod dependency injection, `go_router` stateful tab stacks, Dio, secure storage, SharedPreferences, and Drift/SQLite. API models are mapped to domain models before display; widgets never perform direct network calls.
+The app uses feature-first presentation/application/domain/data boundaries, Riverpod dependency injection, `go_router` stateful tab stacks, Dio, secure storage, and Drift/SQLite. API models are mapped to domain models before display; widgets never perform direct network calls.
 
 Implemented and connected:
 
-- Splash without a fixed delay, onboarding persistence, guest startup, and verified session restoration
+- Direct login startup and verified session restoration
 - Registration, login, secure JWT lifecycle storage, `/students/me`, logout, protected route restoration, centralized protected-request 401 handling
-- Material 3 design system, accessibility-sized controls, reduced-motion onboarding, connectivity banner, status/safety components
-- Native home experience, Colombo opening-hour fallback, backend menu/search/categories, food details, dietary/allergen display
+- Material 3 design system, accessibility-sized controls, connectivity banner, status/safety components
+- Native home experience, Colombo opening-hour fallback, backend menu with an explicit local catalog fallback, search/categories, food details, dietary/allergen display
 - Persistent offline-editable cart, quantity changes, remove/undo, clear, badge, and subtotal estimate
 - Authenticated eight-step checkout UI and real pickup-point/slot discovery
 - Read-only verified loyalty points and tier progress
@@ -70,6 +70,6 @@ See [backend integration audit](docs/BACKEND_INTEGRATION_AUDIT.md) for server fe
 
 ## Secrets and generated data
 
-Do not add JWT secrets, MongoDB URIs, payment credentials, Firebase service files, Maps server keys, signing passwords, or test passwords. JWTs are stored only with `flutter_secure_storage`; onboarding is the only current SharedPreferences business flag. The cart stores no authentication material.
+Do not add JWT secrets, MongoDB URIs, payment credentials, Firebase service files, Maps server keys, signing passwords, or test passwords. JWTs are stored only with `flutter_secure_storage`. The cart stores no authentication material.
 
 Generated Drift and JSON serializer sources are committed so Android Studio can run immediately. Regenerate them after schema/DTO edits with `dart run build_runner build`.

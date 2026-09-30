@@ -8,7 +8,7 @@ extension AppEnvironmentConfig on AppEnvironment {
   };
 
   String get defaultApiBaseUrl => switch (this) {
-    AppEnvironment.development => 'http://10.0.2.2:5000/api/',
+    AppEnvironment.development => 'http://192.168.8.137:5000/api/',
     AppEnvironment.staging => 'https://staging.example.invalid/api/',
     AppEnvironment.production => 'https://api.example.invalid/api/',
   };

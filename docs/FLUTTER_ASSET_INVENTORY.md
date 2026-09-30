@@ -6,12 +6,23 @@ All selected files originate in `../src/assets/`. Optimized copies live only ins
 
 | Original | Flutter destination | Use | Output dimensions / size | Optimization | Semantics |
 | --- | --- | --- | --- | --- | --- |
-| `src/assets/logo1.png` | `assets/branding/nayomis-logo.png` | Splash, auth, app branding | 326×321 / 111,624 B | None; transparency preserved | Meaningful: Nayomi's brand logo |
-| `src/assets/3.png` | `assets/hero/hero-1.webp` | Home carousel, onboarding delivery | 1440×600 / 59,758 B | PNG→WebP q84 | Meaningful: delivery and pickup promotion |
-| `src/assets/4.png` | `assets/hero/hero-2.webp` | Home carousel | 1440×600 / 96,218 B | PNG→WebP q84 | Meaningful: registration and fresh meal promotion |
-| `src/assets/5.png` | `assets/hero/hero-3.webp` | Home carousel | 1440×600 / 49,024 B | PNG→WebP q84 | Meaningful: school breakfast care promotion |
-| `src/assets/PRE-ORDER.png` | `assets/preorder/school-breakfast-preorder.webp` | Pre-order card/onboarding | 1200×500 / 40,784 B | PNG→WebP q84 | Meaningful: school food pre-order illustration |
-| `src/assets/50.jpg` | `assets/about/nayomis-bakery-display.webp` | About and onboarding browse page | 1024×768 / 132,176 B | Downscaled, WebP q84 | Meaningful: Nayomi's bakery food display |
+| `src/assets/logo1.png` | `assets/branding/nayomis-logo.png` | Auth and app branding | 326×321 / 111,624 B | None; transparency preserved | Meaningful: Nayomi's brand logo |
+| `src/assets/PRE-ORDER.png` | `assets/preorder/school-breakfast-preorder.webp` | Pre-order card | 1200×500 / 40,784 B | PNG→WebP q84 | Meaningful: school food pre-order illustration |
+| `src/assets/50.jpg` | `assets/about/nayomis-bakery-display.webp` | About page | 1024×768 / 132,176 B | Downscaled, WebP q84 | Meaningful: Nayomi's bakery food display |
+
+## Menu assets
+
+Seven portrait JPEGs from the website menu catalog are explicitly mapped by normalized item name. They provide the local menu when the backend returns no food records and supply clear images for matching backend records while preserving backend IDs, prices, and availability.
+
+| Flutter destination | Menu item | Dimensions |
+| --- | --- | --- |
+| `assets/menu/chicken burger.jpg` | Chicken Burger | 784×1168 |
+| `assets/menu/chicken pastry.jpg` | Chicken Pastry | 784×1168 |
+| `assets/menu/fish bun.jpg` | Fish Bun | 784×1168 |
+| `assets/menu/fish pastry.jpg` | Fish Pastry | 784×1168 |
+| `assets/menu/sausage pastry.jpg` | Sausage Pastry | 784×1168 |
+| `assets/menu/seenisambol bun.jpg` | Seeni Sambol Bun | 784×1168 |
+| `assets/menu/tea bun.jpg` | Tea Bun | 784×1168 |
 
 ## Gallery assets
 
@@ -45,4 +56,3 @@ The Interior filter is intentionally retained as a requested category but curren
 - `hero-vibrant.jpg`, `hero-waterfront.jpg`: unreferenced alternative/generic waterfront renders.
 - `about-interior.jpg`, `30.jpg`: unused alternate interiors; selected About source is the active `50.jpg`.
 - `1.webp`, `2.webp`: not imported by the active Gallery and do not cover a requested customer flow better than selected assets.
-- Named menu images (`Fish Roll.webp`, `fish bun.jpg`, `fish pastry.jpg`, `chicken burger.jpg`, `chicken pastry.jpg`, `sausage pastry.jpg`, `seenisambol bun.jpg`, `tea bun.jpg`): rejected as automatic local fallbacks because the website maps them by mutable display names. Flutter continues to show backend image URLs and a neutral branded error state rather than risk showing the wrong food.

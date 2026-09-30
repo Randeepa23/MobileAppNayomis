@@ -14,11 +14,9 @@ import '../../features/gallery/presentation/gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
-import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/orders/presentation/orders_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/rewards/presentation/rewards_screen.dart';
-import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/tracking/presentation/tracking_screen.dart';
 import 'main_shell.dart';
 
@@ -28,7 +26,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authControllerProvider);
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/splash',
+    initialLocation: '/login',
     redirect: (context, state) {
       final protected =
           state.matchedLocation == '/profile' ||
@@ -50,11 +48,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-      GoRoute(
-        path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
-      ),
       GoRoute(
         path: '/login',
         builder: (_, state) => LoginScreen(

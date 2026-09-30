@@ -30,8 +30,8 @@ final registrationControllerProvider =
 class AuthController extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
-    final customer = await ref.read(authRepositoryProvider).restore();
-    return AuthState(customer: customer);
+    await ref.read(authRepositoryProvider).logout();
+    return const AuthState();
   }
 
   Future<bool> login(String email, String password) async {

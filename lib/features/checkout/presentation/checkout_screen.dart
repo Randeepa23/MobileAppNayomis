@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../shared/widgets/app_widgets.dart';
 import '../../authentication/application/auth_controller.dart';
 import '../../cart/application/cart_controller.dart';
+import '../../../core/persistence/app_database.dart';
 import '../application/checkout_providers.dart';
 import '../data/checkout_repository.dart';
 
@@ -20,6 +23,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   DateTime? _date;
   String? _slot;
   final _instructions = TextEditingController();
+  final _idempotencyKey = const Uuid().v4();
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -61,32 +66,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   if (_step > 0) const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _canContinue(cart)
-                          ? () {
+                      onPressed: _submitting || !_canContinue(cart)
+                          ? null
+                          : () {
                               if (_step < 7) {
                                 setState(() => _step++);
-                              } else {
-                                showDialog<void>(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: const Text(
-                                      'Order placement unavailable',
-                                    ),
-                                    content: const Text(
-                                      'The existing order endpoint does not authenticate customer ownership or support idempotency. For your security, this app will not submit the order until the backend provides the approved protected placement contract.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('OK'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
+                              } else { _submitOrder(cart); }
                             }
                           : null,
-                      child: Text(_step == 7 ? 'Confirm securely' : 'Next'),
+                      child: Text(_submitting ? 'Placing order…' : _step == 7 ? 'Place cash order' : 'Next'),
                     ),
                   ),
                 ],
@@ -98,7 +86,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  bool _canContinue(List<Object> cart) => switch (_step) {
+  Future<void> _submitOrder(List<CartEntry> cart) async {
+    setState(() => _submitting = true);
+    try {
+      final orderId = await ref.read(checkoutRepositoryProvider).placeCashOrder(
+        items: cart.map((item) => <String, Object>{'foodId': item.itemId, 'quantity': item.quantity}).toList(),
+        pickupPointId: _pickup!.id,
+        deliveryDate: _date!, timeSlot: _slot!,
+        specialInstructions: _instructions.text,
+        idempotencyKey: _idempotencyKey,
+      );
+      await ref.read(cartControllerProvider).clear();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order $orderId confirmed. Pay cash on delivery.')));
+      context.go('/orders');
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  bool _canContinue(List<CartEntry> cart) => switch (_step) {
     0 => cart.isNotEmpty,
     1 => true,
     2 => _pickup != null,
@@ -109,7 +118,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Widget _content(
     String customerName,
-    List<Object> cart,
+    List<CartEntry> cart,
     double subtotal,
   ) => switch (_step) {
     0 => _Step(
@@ -216,10 +225,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       title: 'Payment',
       child: Card(
         child: ListTile(
-          leading: Icon(Icons.account_balance_wallet_outlined),
-          title: Text('Wallet'),
+          leading: Icon(Icons.payments_outlined),
+          title: Text('Cash on delivery'),
           subtitle: Text(
-            'The current backend supports wallet payment only. Balance and charge decisions remain server-owned.',
+            'Pay cash when your order is delivered or collected.',
           ),
         ),
       ),
@@ -239,7 +248,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           const SizedBox(height: 12),
           const SafetyStatusPanel(status: SafetyStatus.offline),
           const Text(
-            'Final placement requires an authenticated, idempotent backend endpoint.',
+            'The final price and availability are confirmed securely by the server.',
           ),
         ],
       ),

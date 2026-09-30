@@ -19,7 +19,6 @@ dependencies:
   go_router: ^17.3.0
   intl: ^0.20.3
   json_annotation: ^4.12.0
-  shared_preferences: ^2.5.5
   timezone: ^0.11.1
   uuid: ^4.5.3
 
@@ -38,7 +37,7 @@ flutter:
   default-flavor: development
   assets:
     - assets/branding/
-    - assets/hero/
+    - assets/menu/
     - assets/gallery/full/
     - assets/gallery/thumbs/
     - assets/about/

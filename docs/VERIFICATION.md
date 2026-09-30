@@ -8,11 +8,11 @@
 - `flutter devices`: API 36 emulator visible
 - `dart run build_runner build`: Drift and JSON sources generated
 - `flutter analyze`: no issues
-- `flutter test`: 7 tests passed
+- `flutter test`: 20 tests passed
 - Development APK produced: `build/app/outputs/flutter-apk/app-development-debug.apk`
 - APK installed on `emulator-5554`
 - `com.nayomis.waterfront.dev/com.nayomis.waterfront.MainActivity` reached top-resumed state
-- Controlled `pm clear` cold launch displayed onboarding page 1 with no onboarding preference stored
+- Router startup widget verification displays the login screen directly
 
 Tests cover environment transport policy, auth validation, secure JWT lifecycle fields/expiry, and backend menu mapping through a Dio mock adapter.
 
