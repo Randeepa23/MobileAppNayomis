@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Food App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🍕 Food App</h1>
+            <div id="userInfo" class="hidden">
+                <span id="userName"></span>
+                <span id="loyaltyPoints" class="points">0 pts</span>
+                <button id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <main id="content">
+            <!-- Login/Register Section -->
+            <div id="authSection">
+                <div class="auth-container">
+                    <div class="auth-tabs">
+                        <button class="tab-btn active" data-tab="login">Login</button>
+                        <button class="tab-btn" data-tab="register">Register</button>
+                    </div>
+                    
+                    <form id="loginForm" class="auth-form">
+                        <h2>Student Login</h2>
+                        <input type="email" id="loginEmail" placeholder="Email" required>
+                        <input type="password" id="loginPassword" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                    </form>
+                    
+                    <form id="registerForm" class="auth-form hidden">
+                        <h2>Student Registration</h2>
+                        <input type="text" id="regName" placeholder="Full Name" required>
+                        <input type="email" id="regEmail" placeholder="Email" required>
+                        <input type="password" id="regPassword" placeholder="Password" required>
+                        <input type="text" id="regSchool" placeholder="School" required>
+                        <input type="text" id="regGrade" placeholder="Grade" required>
+                        <input type="text" id="regAddress" placeholder="Address" required>
+                        <input type="tel" id="regWhatsapp" placeholder="WhatsApp Number" required>
+                        <button type="submit">Register</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Food Menu Section -->
+            <div id="menuSection" class="hidden">
+                <div class="menu-header">
+                    <h2>Today's Menu</h2>
+                    <div class="day-selector">
+                        <label>Select Day:</label>
+                        <select id="daySelect">
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="foodGrid" class="food-grid"></div>
+                
+                <div id="orderSection" class="order-section">
+                    <h3>Your Order</h3>
+                    <div id="cart" class="cart"></div>
+                    
+                    <div class="pickup-details">
+                        <div class="pickup-row">
+                            <label>Pickup Location:</label>
+                            <select id="pickupLocation" required>
+                                <option value="">Select Location</option>
+                                <option value="Main Cafeteria">Main Cafeteria</option>
+                                <option value="Library Entrance">Library Entrance</option>
+                                <option value="Student Center">Student Center</option>
+                                <option value="Sports Complex">Sports Complex</option>
+                            </select>
+                        </div>
+                        <div class="pickup-row">
+                            <label>Pickup Time:</label>
+                            <input type="time" id="pickupTime" required>
+                        </div>
+                    </div>
+                    
+                    <div class="order-total">
+                        <strong>Total: Rs.<span id="orderTotal">0</span></strong>
+                    </div>
+                    
+                    <button id="placeOrderBtn" class="place-order-btn" disabled>Place Order</button>
+                </div>
+            </div>
+        </main>
+        
+        <div id="message" class="message hidden"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

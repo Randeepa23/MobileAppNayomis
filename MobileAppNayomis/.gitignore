@@ -1,0 +1,11 @@
+.gradle/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/deploymentTargetSelector.xml
+build/
+app/build/
+local.properties
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nayomi's Waterfront - Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <header class="admin-header">
+            <h1>🏝️ Nayomi's Waterfront - Admin Dashboard</h1>
+            <div class="admin-user">
+                <span id="adminName">Admin User</span>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+        </header>
+        
+        <div class="admin-container">
+            <nav class="admin-sidebar">
+                <ul class="nav-menu">
+                    <li><button class="nav-btn active" data-section="dashboard">📊 Dashboard</button></li>
+                    <li><button class="nav-btn" data-section="students">👥 Students</button></li>
+                    <li><button class="nav-btn" data-section="food">🍽️ Food Items</button></li>
+                    <li><button class="nav-btn" data-section="orders">📋 Orders</button></li>
+                    <li><button class="nav-btn" data-section="reviews">⭐ Reviews</button></li>
+                    <li><button class="nav-btn" data-section="loyalty">🎁 Loyalty Points</button></li>
+                </ul>
+            </nav>
+            
+            <main class="admin-main">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="admin-section active">
+                    <h2>📊 Dashboard Overview</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card students">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <h3 id="totalStudents">0</h3>
+                                <p>Total Students</p>
+                            </div>
+                        </div>
+                        <div class="stat-card orders">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-content">
+                                <h3 id="totalOrders">0</h3>
+                                <p>Total Orders</p>
+                            </div>
+                        </div>
+                        <div class="stat-card revenue">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <h3 id="totalRevenue">Rs.0</h3>
+                                <p>Total Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card reviews">
+                            <div class="stat-icon">⭐</div>
+                            <div class="stat-content">
+                                <h3 id="totalReviews">0</h3>
+                                <p>Total Reviews</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activities">
+                        <h3>Recent Activities</h3>
+                        <div id="recentActivities" class="activity-list">
+                            <p class="loading">Loading recent activities...</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Students Section -->
+                <section id="students" class="admin-section">
+                    <h2>👥 Students Management</h2>
+                    <div class="section-controls">
+                        <input type="text" id="studentSearch" placeholder="Search students..." class="search-input">
+                        <button class="btn-primary" onclick="refreshStudents()">🔄 Refresh</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>School</th>
+                                    <th>Grade</th>
+                                    <th>WhatsApp</th>
+                                    <th>Loyalty Points</th>
+                                    <th>Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody">
+                                <tr><td colspan="7" class="loading">Loading students...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <!-- Food Items Section -->
+                <section id="food" class="admin-section">
+                    <h2>🍽️ Food Items Management</h2>
+                    <div class="section-controls">
+                        <input type="text" id="foodSearch" placeholder="Search food items..." class="search-input">
+                        <button class="btn-primary" onclick="refreshFood()">🔄 Refresh</button>
+                        <button class="btn-success" onclick="showAddFoodForm()">➕ Add New Item</button>
+                    </div>
+                    
+                    <div id="addFoodForm" class="form-modal hidden">
+                        <div class="modal-content">
+                            <h3>Add New Food Item</h3>
+                            <form id="foodForm">
+                                <input type="text" id="foodName" placeholder="Food Name" required>
+                                <input type="number" id="foodPrice" placeholder="Price (Rs.)" required>
+                                <textarea id="foodDescription" placeholder="Description"></textarea>
+                                <select id="foodCategory">
+                                    <option value="">Select Category</option>
+                                    <option value="Main Course">Main Course</option>
+                                    <option value="Breakfast">Breakfast</option>
+                                    <option value="Beverage">Beverage</option>
+                                    <option value="Dessert">Dessert</option>
+                                </select>
+                                <div class="available-days">
+                                    <label>Available Days:</label>
+                                    <div class="days-grid">
+                                        <label><input type="checkbox" name="days" value="monday" checked> Monday</label>
+                                        <label><input type="checkbox" name="days" value="tuesday" checked> Tuesday</label>
+                                        <label><input type="checkbox" name="days" value="wednesday" checked> Wednesday</label>
+                                        <label><input type="checkbox" name="days" value="thursday" checked> Thursday</label>
+                                        <label><input type="checkbox" name="days" value="friday" checked> Friday</label>
+                                        <label><input type="checkbox" name="days" value="saturday"> Saturday</label>
+                                        <label><input type="checkbox" name="days" value="sunday"> Sunday</label>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" onclick="hideAddFoodForm()" class="btn-secondary">Cancel</button>
+                                    <button type="submit" class="btn-primary">Add Item</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>Category</th>
+                                    <th>Available Days</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="foodTableBody">
+                                <tr><td colspan="6" class="loading">Loading food items...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <!-- Orders Section -->
+                <section id="orders" class="admin-section">
+                    <h2>📋 Orders Management</h2>
+                    <div class="section-controls">
+                        <select id="orderStatusFilter" class="filter-select">
+                            <option value="">All Orders</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <button class="btn-primary" onclick="refreshOrders()">🔄 Refresh</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Student</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Pickup Location</th>
+                                    <th>Pickup Time</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <tr><td colspan="9" class="loading">Loading orders...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <!-- Reviews Section -->
+                <section id="reviews" class="admin-section">
+                    <h2>⭐ Reviews Management</h2>
+                    <div class="section-controls">
+                        <select id="reviewRatingFilter" class="filter-select">
+                            <option value="">All Ratings</option>
+                            <option value="5">5 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="2">2 Stars</option>
+                            <option value="1">1 Star</option>
+                        </select>
+                        <button class="btn-primary" onclick="refreshReviews()">🔄 Refresh</button>
+                    </div>
+                    <div class="reviews-grid" id="reviewsGrid">
+                        <p class="loading">Loading reviews...</p>
+                    </div>
+                </section>
+                
+                <!-- Loyalty Points Section -->
+                <section id="loyalty" class="admin-section">
+                    <h2>🎁 Loyalty Points Management</h2>
+                    <div class="section-controls">
+                        <button class="btn-primary" onclick="refreshLoyalty()">🔄 Refresh</button>
+                        <button class="btn-info" onclick="exportLoyaltyData()">📊 Export Data</button>
+                    </div>
+                    <div class="loyalty-summary">
+                        <div class="summary-card">
+                            <h3 id="totalPointsIssued">0</h3>
+                            <p>Total Points Issued</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3 id="avgPointsPerStudent">0</h3>
+                            <p>Avg Points per Student</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3 id="topLoyaltyStudent">-</h3>
+                            <p>Top Loyalty Student</p>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Email</th>
+                                    <th>Total Points</th>
+                                    <th>Total Orders</th>
+                                    <th>Total Spent</th>
+                                    <th>Avg Order Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loyaltyTableBody">
+                                <tr><td colspan="6" class="loading">Loading loyalty data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+    
+    <!-- Message toast -->
+    <div id="messageToast" class="message-toast hidden">
+        <span id="messageText"></span>
+        <button onclick="hideMessage()">✕</button>
+    </div>
+    
+    <script src="admin.js"></script>
+</body>
+</html>
