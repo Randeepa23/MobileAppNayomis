@@ -9,6 +9,7 @@ import '../../features/authentication/presentation/register_screen.dart';
 import '../../features/cart/presentation/cart_screen.dart';
 import '../../features/checkout/presentation/checkout_screen.dart';
 import '../../features/contact/presentation/contact_screen.dart';
+import '../../features/driver/presentation/driver_screen.dart';
 import '../../features/food_details/presentation/food_details_screen.dart';
 import '../../features/gallery/presentation/gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -17,6 +18,7 @@ import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/orders/presentation/orders_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/rewards/presentation/rewards_screen.dart';
+import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/tracking/presentation/tracking_screen.dart';
 import 'main_shell.dart';
 
@@ -26,8 +28,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authControllerProvider);
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/login',
+    initialLocation: '/splash',
     redirect: (context, state) {
+      if (state.matchedLocation == '/splash') {
+        return null;
+      }
       final protected =
           state.matchedLocation == '/profile' ||
           state.matchedLocation == '/orders' ||
@@ -48,6 +53,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(
         path: '/login',
         builder: (_, state) => LoginScreen(
@@ -103,6 +109,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
       GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
+      GoRoute(path: '/driver', builder: (_, __) => const DriverScreen()),
       GoRoute(
         path: '/tracking/:id',
         builder: (_, state) =>

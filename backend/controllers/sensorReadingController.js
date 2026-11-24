@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const SensorReading = require('../models/SensorReading');
+const Alert = require('../models/Alert');
 
 const TERMINAL_ORDER_STATUSES = ['delivered', 'completed', 'cancelled', 'rejected'];
 const ACTIVE_BOX_STATUSES = ['assigned', 'in-transit'];
@@ -10,6 +11,7 @@ const ALLOWED_FIELDS = new Set([
   'order_id',
   'temperature_c',
   'humidity_percent',
+  'gas_raw',
   'latitude',
   'longitude',
   'motion_detected',
@@ -18,6 +20,8 @@ const ALLOWED_FIELDS = new Set([
   'acceleration_z',
   'box_open',
   'battery_percent',
+  'observation_id',
+  'sequence_number',
   'device_recorded_at',
 ]);
 
@@ -38,6 +42,7 @@ const serializeReading = (reading) => {
     id: String(value._id || value.id),
     temperature_c: value.temperatureC ?? null,
     humidity_percent: value.humidityPercent ?? null,
+    gas_raw: value.gasRaw ?? null,
     latitude: value.latitude ?? null,
     longitude: value.longitude ?? null,
     motion_detected: value.motionDetected ?? null,
@@ -46,6 +51,8 @@ const serializeReading = (reading) => {
     acceleration_z: value.accelerationZ ?? null,
     box_open: value.boxOpen ?? null,
     battery_percent: value.batteryPercent ?? null,
+    observation_id: value.observationId ?? null,
+    sequence_number: value.sequenceNumber ?? null,
     device_recorded_at: isoOrNull(value.deviceRecordedAt),
     received_at: isoOrNull(value.receivedAt),
   };
@@ -88,9 +95,17 @@ const validateReadingPayload = (body = {}) => {
     }
   }
 
+  let observationId = null;
+  if (body.observation_id !== undefined && body.observation_id !== null) {
+    if (typeof body.observation_id === 'string' && body.observation_id.trim()) {
+      observationId = body.observation_id.trim().slice(0, 128);
+    }
+  }
+
   const value = {
     temperatureC: validateNumber(body, 'temperature_c', -50, 125, errors),
     humidityPercent: validateNumber(body, 'humidity_percent', 0, 100, errors),
+    gasRaw: validateNumber(body, 'gas_raw', 0, 10000, errors),
     latitude: validateNumber(body, 'latitude', -90, 90, errors),
     longitude: validateNumber(body, 'longitude', -180, 180, errors),
     motionDetected: validateBoolean(body, 'motion_detected', errors),
@@ -99,6 +114,8 @@ const validateReadingPayload = (body = {}) => {
     accelerationZ: validateNumber(body, 'acceleration_z', -2000, 2000, errors),
     boxOpen: validateBoolean(body, 'box_open', errors),
     batteryPercent: validateNumber(body, 'battery_percent', 0, 100, errors),
+    sequenceNumber: validateNumber(body, 'sequence_number', 0, 1000000000, errors),
+    observationId,
     deviceRecordedAt,
   };
 
@@ -133,12 +150,14 @@ const ingestReading = async (req, res) => {
       return res.status(409).json({ success: false, code: 'ORDER_NOT_ACTIVE', message: 'The device is not assigned to an active delivery for this order.' });
     }
 
+    const now = new Date();
     const reading = await SensorReading.create({
       smartBox: device._id,
       deviceId: device.boxId,
       order: order._id,
       temperatureC: value.temperatureC,
       humidityPercent: value.humidityPercent,
+      gasRaw: value.gasRaw,
       latitude: value.latitude,
       longitude: value.longitude,
       motionDetected: value.motionDetected,
@@ -147,9 +166,110 @@ const ingestReading = async (req, res) => {
       accelerationZ: value.accelerationZ,
       boxOpen: value.boxOpen,
       batteryPercent: value.batteryPercent,
+      observationId: value.observationId,
+      sequenceNumber: value.sequenceNumber,
       deviceRecordedAt: value.deviceRecordedAt,
-      receivedAt: new Date(),
+      receivedAt: now,
     });
+
+    // Update real-time box status
+    if (value.temperatureC != null) {
+      device.temperature.current = value.temperatureC;
+      device.temperature.lastUpdated = now;
+    }
+    if (value.batteryPercent != null) {
+      device.batteryLevel = value.batteryPercent;
+    }
+    if (value.latitude != null && value.longitude != null) {
+      device.location = device.location || {};
+      device.location.coordinates = [value.longitude, value.latitude];
+      device.location.lastUpdated = now;
+    }
+
+    // Evaluate alerts
+    const alertsToCreate = [];
+    const minTemp = device.temperature?.min ?? 4;
+    const maxTemp = device.temperature?.max ?? 60;
+    if (value.temperatureC != null && (value.temperatureC < minTemp || value.temperatureC > maxTemp)) {
+      alertsToCreate.push({
+        type: 'temperature_breach',
+        severity: 'high',
+        message: `Temperature ${value.temperatureC}°C is outside the safe threshold (${minTemp}°C - ${maxTemp}°C).`,
+        triggerValue: value.temperatureC,
+      });
+    }
+
+    const gasMax = device.gasThreshold?.max ?? 800;
+    if (value.gasRaw != null && value.gasRaw > gasMax) {
+      alertsToCreate.push({
+        type: 'gas_anomaly',
+        severity: 'high',
+        message: `Gas sensor reading (${value.gasRaw}) exceeded safety threshold (${gasMax}).`,
+        triggerValue: value.gasRaw,
+      });
+    }
+
+    if (value.boxOpen === true) {
+      alertsToCreate.push({
+        type: 'tampering',
+        severity: 'medium',
+        message: 'Delivery container lid opening detected during transit.',
+        triggerValue: true,
+      });
+    }
+
+    if (value.batteryPercent != null && value.batteryPercent < 20) {
+      alertsToCreate.push({
+        type: 'low_battery',
+        severity: value.batteryPercent < 10 ? 'high' : 'medium',
+        message: `Monitoring unit battery is low (${value.batteryPercent}%).`,
+        triggerValue: value.batteryPercent,
+      });
+    }
+
+    for (const item of alertsToCreate) {
+      const threeMinsAgo = new Date(Date.now() - 3 * 60 * 1000);
+      const existing = await Alert.findOne({
+        boxId: device.boxId,
+        orderId: order._id,
+        type: item.type,
+        resolved: false,
+        createdAt: { $gte: threeMinsAgo },
+      });
+
+      if (!existing) {
+        await Alert.create({
+          boxId: device.boxId,
+          orderId: order._id,
+          triggerReading: reading._id,
+          type: item.type,
+          severity: item.severity,
+          message: item.message,
+          triggerValue: item.triggerValue,
+        });
+
+        if (Array.isArray(device.alerts)) {
+          device.alerts.push({
+            type: item.type.includes('temp') ? 'temperature' : item.type.includes('tamper') ? 'tampering' : 'other',
+            message: item.message,
+            severity: item.severity,
+            timestamp: now,
+          });
+        }
+
+        if (order.delivery) {
+          order.delivery.alerts = order.delivery.alerts || [];
+          order.delivery.alerts.push({
+            type: item.type,
+            message: item.message,
+            timestamp: now,
+          });
+        }
+      }
+    }
+
+    device.lastReading = serializeReading(reading);
+    await Promise.allSettled([device.save(), order.save()]);
 
     return res.status(201).json({
       success: true,
@@ -157,7 +277,7 @@ const ingestReading = async (req, res) => {
       data: { id: String(reading._id), received_at: isoOrNull(reading.receivedAt) },
     });
   } catch (error) {
-    console.error('Unable to store sensor reading.');
+    console.error('Unable to store sensor reading.', error);
     return res.status(500).json({ success: false, code: 'INTERNAL_ERROR', message: 'Unable to store the sensor reading right now.' });
   }
 };

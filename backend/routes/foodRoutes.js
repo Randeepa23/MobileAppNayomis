@@ -1,11 +1,22 @@
 const express = require('express');
-const { addFoodItem, updateFoodPrice, updateFoodItem, deleteFoodItem, getFoodById, toggleAvailability, getFoodList, getFoodByDay } = require('../controllers/foodController');
+const { 
+  addFoodItem, 
+  updateFoodPrice, 
+  updateFoodItem, 
+  deleteFoodItem, 
+  getFoodById, 
+  toggleAvailability, 
+  bulkUpdateAvailability,
+  getFoodList, 
+  getFoodByDay 
+} = require('../controllers/foodController');
 
 const router = express.Router();
 
-router.post('/', addFoodItem);  // Changed from /add to / for admin dashboard
+router.post('/', addFoodItem);
 router.post('/add', addFoodItem);
 router.get('/', getFoodList);
+router.put('/bulk-availability', bulkUpdateAvailability);
 router.get('/:id', getFoodById);
 router.put('/:id', updateFoodItem);
 router.put('/price/:id', updateFoodPrice);

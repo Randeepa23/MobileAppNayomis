@@ -34,7 +34,14 @@ export const Menu: React.FC<MenuProps> = ({ searchTerm = '', selectedCategory = 
     refetchInterval: 20000, // Auto-refresh every 20 seconds to sync with admin changes
   });
 
-  // Filter foods based on search and category
+  const tomorrowDayKey = React.useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[tomorrow.getDay()];
+  }, []);
+
+  // Filter foods based on search, category, and tomorrow's availability
   const filteredFoods = React.useMemo(() => {
     if (!foodsResponse) return [];
     
@@ -43,9 +50,10 @@ export const Menu: React.FC<MenuProps> = ({ searchTerm = '', selectedCategory = 
                           food.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || 
                             food.category.toLowerCase() === selectedCategory.toLowerCase();
-      return matchesSearch && matchesCategory && food.available;
+      const isDayScheduled = !food.availableDays || food.availableDays[tomorrowDayKey] !== false;
+      return matchesSearch && matchesCategory && food.available && isDayScheduled;
     });
-  }, [foodsResponse, searchTerm, selectedCategory]);
+  }, [foodsResponse, searchTerm, selectedCategory, tomorrowDayKey]);
 
   // Get unique categories
   const categories = React.useMemo(() => {

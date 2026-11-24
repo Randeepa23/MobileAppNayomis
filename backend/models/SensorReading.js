@@ -28,6 +28,8 @@ const sensorReadingSchema = new mongoose.Schema({
   },
   temperatureC: nullableNumber(-50, 125),
   humidityPercent: nullableNumber(0, 100),
+  gasRaw: nullableNumber(0, 10000),
+  gasAlert: { type: Boolean, default: null },
   latitude: nullableNumber(-90, 90),
   longitude: nullableNumber(-180, 180),
   motionDetected: { type: Boolean, default: null },
@@ -36,6 +38,8 @@ const sensorReadingSchema = new mongoose.Schema({
   accelerationZ: nullableNumber(-2000, 2000),
   boxOpen: { type: Boolean, default: null },
   batteryPercent: nullableNumber(0, 100),
+  observationId: { type: String, default: null, trim: true },
+  sequenceNumber: { type: Number, default: null },
   deviceRecordedAt: { type: Date, default: null },
   receivedAt: {
     type: Date,

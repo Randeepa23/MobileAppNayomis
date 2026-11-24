@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Battery, Box, Clock3, Droplets, Info, MapPinned, RefreshCw, Thermometer, Wifi } from 'lucide-react';
+import { Activity, Battery, Box, Clock3, Droplets, Flame, Info, MapPinned, RefreshCw, Thermometer, Wifi } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError, apiService } from '@/services/api';
 import type { LatestSensorReadingResponse, SensorDeviceStatus, SensorOrderOption, SensorReadingHistoryResponse } from '@/types';
@@ -175,9 +175,24 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }, (_, index) => <Skeleton key={index} className="h-28 w-full" />)}</div> :
           !latest ? <Card className="border-orange-200"><CardContent className="p-8 text-center text-gray-700">Waiting for the first reading from the smart delivery box.</CardContent></Card> :
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <ReadingCard icon={Thermometer} label="Temperature">{numeric(SUMMARY_TEMPERATURE_C, 1, ' °C')}</ReadingCard>
-            <ReadingCard icon={Droplets} label="Humidity">{numeric(SUMMARY_HUMIDITY_PERCENT, 1, ' %')}</ReadingCard>
-            <ReadingCard icon={MapPinned} label="GPS coordinates">{latest.latitude == null || latest.longitude == null ? NA : `${numeric(latest.latitude, 6)}, ${numeric(latest.longitude, 6)}`}</ReadingCard>
+            <ReadingCard icon={Thermometer} label="Temperature">{numeric(latest.temperature_c, 1, ' °C')}</ReadingCard>
+            <ReadingCard icon={Droplets} label="Humidity">{numeric(latest.humidity_percent, 1, ' %')}</ReadingCard>
+            <ReadingCard icon={Flame} label="Gas Reading">{latest.gas_raw != null ? `${latest.gas_raw} (ADC)` : NA}</ReadingCard>
+            <ReadingCard icon={MapPinned} label="GPS coordinates">
+              {latest.latitude == null || latest.longitude == null ? NA : (
+                <div className="flex flex-col gap-1">
+                  <span>{`${numeric(latest.latitude, 6)}, ${numeric(latest.longitude, 6)}`}</span>
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${latest.latitude}&mlon=${latest.longitude}#map=16/${latest.latitude}/${latest.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-orange-600 underline hover:text-orange-800"
+                  >
+                    View on Map ↗
+                  </a>
+                </div>
+              )}
+            </ReadingCard>
             <ReadingCard icon={Activity} label="Motion / handling">{motion(latest.motion_detected)}</ReadingCard>
             <ReadingCard icon={Box} label="Box opening">{boxState(latest.box_open)}</ReadingCard>
             {latest.battery_percent !== null && <ReadingCard icon={Battery} label="Battery level">{numeric(latest.battery_percent, 1, ' %')}</ReadingCard>}
@@ -188,14 +203,15 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
         <Card className="border-orange-200"><CardHeader><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-xl text-gray-900">Reading history</CardTitle>{pagination && <span className="text-sm text-gray-500">{pagination.total} readings</span>}
         </div></CardHeader><CardContent>
-          <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1050px]"><TableHeader><TableRow className="bg-orange-50">
-            <TableHead>Timestamp</TableHead><TableHead>Temperature</TableHead><TableHead>Humidity</TableHead><TableHead>Latitude</TableHead>
+          <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1150px]"><TableHeader><TableRow className="bg-orange-50">
+            <TableHead>Timestamp</TableHead><TableHead>Temperature</TableHead><TableHead>Humidity</TableHead><TableHead>Gas (ADC)</TableHead><TableHead>Latitude</TableHead>
             <TableHead>Longitude</TableHead><TableHead>Motion status</TableHead><TableHead>Box-open status</TableHead><TableHead>Battery</TableHead>
           </TableRow></TableHeader><TableBody>
-            {!history.length ? <TableRow><TableCell colSpan={8} className="h-24 text-center text-gray-500">No sensor reading history is available yet.</TableCell></TableRow> :
+            {!history.length ? <TableRow><TableCell colSpan={9} className="h-24 text-center text-gray-500">No sensor reading history is available yet.</TableCell></TableRow> :
               history.map((reading) => <TableRow key={reading.id}>
                 <TableCell className="whitespace-nowrap">{timestamp(reading.received_at)}</TableCell>
                 <TableCell>{numeric(reading.temperature_c, 1, ' °C')}</TableCell><TableCell>{numeric(reading.humidity_percent, 1, ' %')}</TableCell>
+                <TableCell>{reading.gas_raw != null ? reading.gas_raw : NA}</TableCell>
                 <TableCell>{numeric(reading.latitude, 6)}</TableCell><TableCell>{numeric(reading.longitude, 6)}</TableCell>
                 <TableCell>{motion(reading.motion_detected)}</TableCell><TableCell>{boxState(reading.box_open)}</TableCell><TableCell>{numeric(reading.battery_percent, 1, ' %')}</TableCell>
               </TableRow>)}

@@ -52,7 +52,7 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const token = localStorage.getItem('nayomis_token');
+      const token = localStorage.getItem('nayomis_admin_token') || localStorage.getItem('nayomis_token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...options.headers as Record<string, string>,
@@ -124,8 +124,14 @@ class ApiService {
   }
 
   // Food Management Routes - matches /api/food/*
-  async getFoods(): Promise<ApiResponse<FoodsResponse>> {
-    return this.request<FoodsResponse>('/food');
+  async getFoods(options?: { day?: string; nextDay?: boolean }): Promise<ApiResponse<FoodsResponse>> {
+    let endpoint = '/food';
+    const params = new URLSearchParams();
+    if (options?.day) params.set('day', options.day);
+    if (options?.nextDay) params.set('nextDay', 'true');
+    const qs = params.toString();
+    if (qs) endpoint += `?${qs}`;
+    return this.request<FoodsResponse>(endpoint);
   }
 
   async createFood(foodData: CreateFoodRequest): Promise<ApiResponse<Food>> {
@@ -148,9 +154,17 @@ class ApiService {
     });
   }
 
-  async toggleFoodAvailability(foodId: string): Promise<ApiResponse<Food>> {
+  async toggleFoodAvailability(foodId: string, isAvailable?: boolean, day?: string): Promise<ApiResponse<Food>> {
     return this.request<Food>(`/food/availability/${foodId}`, {
       method: 'PUT',
+      body: JSON.stringify({ isAvailable, day }),
+    });
+  }
+
+  async bulkToggleFoodAvailability(data: { isAvailable: boolean; day?: string; all?: boolean; ids?: string[] }): Promise<ApiResponse<any>> {
+    return this.request<any>('/food/bulk-availability', {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
   }
 
@@ -261,6 +275,70 @@ class ApiService {
     return this.request<SensorReadingHistoryResponse>(
       `/pre-orders/${encodeURIComponent(orderId)}/sensor-readings?page=${page}&per_page=${perPage}`
     );
+  }
+
+  // Device Fleet & Box Admin routes
+  async getAdminDevices(): Promise<ApiResponse<{ devices: any[] }>> {
+    return this.request<{ devices: any[] }>('/admin/boxes/devices');
+  }
+
+  async registerAdminDevice(deviceId: string): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/boxes/devices', {
+      method: 'POST',
+      body: JSON.stringify({ deviceId }),
+    });
+  }
+
+  async assignAdminDevice(deviceId: string, orderId: string): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/boxes/devices/assign', {
+      method: 'POST',
+      body: JSON.stringify({ deviceId, orderId }),
+    });
+  }
+
+  async unassignAdminDevice(deviceId: string, orderId: string): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/boxes/devices/unassign', {
+      method: 'POST',
+      body: JSON.stringify({ deviceId, orderId }),
+    });
+  }
+
+  async issueDeviceToken(boxId: string): Promise<ApiResponse<{ boxId: string; token: string }>> {
+    return this.request<{ boxId: string; token: string }>(`/admin/boxes/devices/${encodeURIComponent(boxId)}/token`, {
+      method: 'POST',
+    });
+  }
+
+  async updateDeviceSettings(
+    boxId: string,
+    settings: { tempMin?: number; tempMax?: number; gasMax?: number }
+  ): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/boxes/devices/${encodeURIComponent(boxId)}/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify(settings),
+    });
+  }
+
+  // Alerts & Incident Management routes
+  async getAlerts(params?: { resolved?: boolean; severity?: string; boxId?: string; orderId?: string }): Promise<ApiResponse<{ alerts: any[] }>> {
+    const searchParams = new URLSearchParams();
+    if (params?.resolved !== undefined) searchParams.set('resolved', String(params.resolved));
+    if (params?.severity) searchParams.set('severity', params.severity);
+    if (params?.boxId) searchParams.set('boxId', params.boxId);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    return this.request<{ alerts: any[] }>(`/alerts${query}`);
+  }
+
+  async getAlertSummary(): Promise<ApiResponse<{ unresolvedCount: number; criticalCount: number; totalCount: number }>> {
+    return this.request<{ unresolvedCount: number; criticalCount: number; totalCount: number }>('/alerts/summary');
+  }
+
+  async resolveAlert(id: string, incidentNotes?: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/alerts/${encodeURIComponent(id)}/resolve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ incidentNotes }),
+    });
   }
 }
 

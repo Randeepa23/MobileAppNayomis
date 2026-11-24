@@ -20,6 +20,16 @@ export interface Food {
   category: string;
   description: string;
   available: boolean;
+  availableDays?: {
+    monday?: boolean;
+    tuesday?: boolean;
+    wednesday?: boolean;
+    thursday?: boolean;
+    friday?: boolean;
+    saturday?: boolean;
+    sunday?: boolean;
+    [key: string]: boolean | undefined;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -43,9 +53,12 @@ export interface Order {
   };
   items: OrderItem[];
   total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
+  status: 'pending' | 'validated' | 'confirmed' | 'preparing' | 'ready' | 'dispatched' | 'delivered' | 'completed' | 'cancelled' | 'rejected';
   pointsEarned: number;
   pointsUsed: number;
+  pickupLocation?: string;
+  pickupTime?: string;
+  deliveryDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -145,6 +158,7 @@ export interface SensorReading {
   id: string;
   temperature_c: number | null;
   humidity_percent: number | null;
+  gas_raw?: number | null;
   latitude: number | null;
   longitude: number | null;
   motion_detected: boolean | null;
@@ -153,8 +167,76 @@ export interface SensorReading {
   acceleration_z: number | null;
   box_open: boolean | null;
   battery_percent: number | null;
+  observation_id?: string | null;
+  sequence_number?: number | null;
   device_recorded_at: string | null;
   received_at: string | null;
+}
+
+export interface DeliveryDevice {
+  boxId: string;
+  status: 'idle' | 'assigned' | 'in-transit' | 'delivered' | 'returned';
+  assignedOrderId: string | null;
+  order: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    pickupLocation: string;
+    deliveryDate: string;
+  } | null;
+  driver?: {
+    id: string;
+    name: string;
+    phone: string | null;
+  } | null;
+  temperature: {
+    current: number | null;
+    min: number;
+    max: number;
+    lastUpdated: string | null;
+  };
+  gasThreshold?: {
+    max: number;
+  };
+  location: {
+    coordinates: [number, number];
+    address?: string;
+    lastUpdated?: string | null;
+  };
+  batteryLevel: number;
+  lastReading: Partial<SensorReading> | null;
+  activeAlertsCount: number;
+  hasDeviceToken: boolean;
+  firmwareVersion: string;
+  assignedDate?: string | null;
+  deliveredDate?: string | null;
+  updatedAt: string;
+}
+
+export interface DeliveryAlert {
+  _id: string;
+  boxId: string;
+  orderId?: {
+    _id: string;
+    pickupLocation: string;
+    deliveryDate: string;
+    status: string;
+  } | null;
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  triggerValue?: unknown;
+  triggerReading?: {
+    temperatureC?: number;
+    humidityPercent?: number;
+    gasRaw?: number;
+    receivedAt?: string;
+  } | null;
+  resolved: boolean;
+  resolvedAt?: string | null;
+  resolvedBy?: string | null;
+  incidentNotes?: string;
+  createdAt: string;
 }
 
 export interface SensorOrderListResponse {

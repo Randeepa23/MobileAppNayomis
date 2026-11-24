@@ -29,6 +29,22 @@ const deliveryBoxSchema = new mongoose.Schema({
     max: { type: Number, default: 60 },
     lastUpdated: { type: Date, default: null }
   },
+  gasThreshold: {
+    max: { type: Number, default: 800 }
+  },
+  firmwareVersion: {
+    type: String,
+    default: '1.0.0'
+  },
+  driver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+    default: null
+  },
+  lastReading: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
   location: {
     type: {
       type: String,

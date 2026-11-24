@@ -77,6 +77,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final filtered = items
         .where(
           (item) =>
+              item.isAvailable &&
               (_category == null || item.category == _category) &&
               (query.isEmpty ||
                   item.name.toLowerCase().contains(query) ||

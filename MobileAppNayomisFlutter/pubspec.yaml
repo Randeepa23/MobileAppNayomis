@@ -42,3 +42,9 @@ flutter:
     - assets/gallery/thumbs/
     - assets/about/
     - assets/preorder/
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+

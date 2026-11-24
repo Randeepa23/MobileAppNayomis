@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 enum AppEnvironment { development, staging, production }
 
 extension AppEnvironmentConfig on AppEnvironment {
@@ -8,7 +10,9 @@ extension AppEnvironmentConfig on AppEnvironment {
   };
 
   String get defaultApiBaseUrl => switch (this) {
-    AppEnvironment.development => 'http://192.168.8.137:5000/api/',
+    AppEnvironment.development => defaultTargetPlatform == TargetPlatform.iOS
+        ? 'http://127.0.0.1:5000/api/'
+        : 'http://192.168.8.137:5000/api/',
     AppEnvironment.staging => 'https://staging.example.invalid/api/',
     AppEnvironment.production => 'https://api.example.invalid/api/',
   };

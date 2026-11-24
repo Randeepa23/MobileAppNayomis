@@ -1,8 +1,11 @@
-﻿# Nayomi's Waterfront — full project
+# Nayomi's Waterfront — full project
 
-Website, backend, and Android mobile apps in one repository.
+Website, backend, and Android/iOS mobile apps in one repository with an integrated **ESP32 IoT Smart Food Delivery Monitoring System for School Breakfast Distribution**.
 
-**Start here: [Setup on another laptop](SETUP_OTHER_LAPTOP.md).**
+**Guides & Manuals:**
+- [Smart Delivery Monitoring System Guide](SMART_DELIVERY_SYSTEM_GUIDE.md) — Architecture, ESP32 firmware, HACCP alerts, and API reference.
+- [ESP32 Firmware Source & Pinout](firmware/esp32_smart_delivery_box/README.md)
+- [Setup on another laptop](SETUP_OTHER_LAPTOP.md)
 
 | Component | Location | Development address |
 | --- | --- | --- |

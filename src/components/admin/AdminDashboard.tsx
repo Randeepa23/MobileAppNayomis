@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -26,17 +26,27 @@ import {
   LogOut,
   AlertCircle,
   Loader2,
-  FileX
+  FileX,
+  Search,
+  RefreshCw,
+  Cpu,
+  ShieldAlert,
+  SlidersHorizontal
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Order, Student, Food } from '@/types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { AdminDevices } from '@/components/admin/AdminDevices';
+import { AdminAlerts } from '@/components/admin/AdminAlerts';
 
 export const AdminDashboard: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [foodSearchQuery, setFoodSearchQuery] = useState('');
   const [newFood, setNewFood] = useState({
     name: '',
     price: '',
@@ -56,8 +66,16 @@ export const AdminDashboard: React.FC = () => {
     navigate('/admin/login');
   };
 
+  const handleRefreshAll = () => {
+    queryClient.invalidateQueries();
+    toast({
+      title: 'Dashboard Refreshed',
+      description: 'Synchronized latest orders, fleet, and safety telemetry.',
+    });
+  };
+
   // Fetch dashboard stats
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
       const response = await apiService.getStats();
@@ -66,7 +84,7 @@ export const AdminDashboard: React.FC = () => {
       }
       throw new Error(response.message || 'Failed to fetch stats');
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   // Fetch all orders
@@ -79,7 +97,7 @@ export const AdminDashboard: React.FC = () => {
       }
       throw new Error(response.message || 'Failed to fetch orders');
     },
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000,
   });
 
   // Fetch all students
@@ -92,7 +110,7 @@ export const AdminDashboard: React.FC = () => {
       }
       throw new Error(response.message || 'Failed to fetch students');
     },
-    refetchInterval: 15000, // Refresh every 15 seconds
+    refetchInterval: 15000,
   });
 
   // Fetch all foods
@@ -100,12 +118,82 @@ export const AdminDashboard: React.FC = () => {
     queryKey: ['admin-foods'],
     queryFn: async () => {
       const response = await apiService.getFoods();
-      if (response.success && response.data) {
-        return response.data.foods;
+      if (Array.isArray(response)) {
+        return response;
       }
-      throw new Error(response.message || 'Failed to fetch foods');
+      if (response && response.success && response.data) {
+        return response.data.foods || (Array.isArray(response.data) ? response.data : []);
+      }
+      if (response && (response as any).foods && Array.isArray((response as any).foods)) {
+        return (response as any).foods;
+      }
+      return [];
     },
-    refetchInterval: 20000, // Refresh every 20 seconds
+    refetchInterval: 20000,
+  });
+
+  const [selectedMenuDay, setSelectedMenuDay] = useState<string>('tomorrow');
+
+  const { nextSchoolDayKey, nextSchoolDayName } = useMemo(() => {
+    const target = new Date();
+    target.setDate(target.getDate() + 1);
+    // If next day is Saturday (6), roll to Monday (+2 days)
+    if (target.getDay() === 6) {
+      target.setDate(target.getDate() + 2);
+    }
+    // If next day is Sunday (0), roll to Monday (+1 day)
+    else if (target.getDay() === 0) {
+      target.setDate(target.getDate() + 1);
+    }
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return {
+      nextSchoolDayKey: days[target.getDay()],
+      nextSchoolDayName: target.toLocaleDateString('en-US', { weekday: 'long' })
+    };
+  }, []);
+
+  // Toggle food availability for next day pre-orders or specific day
+  const toggleFoodMutation = useMutation({
+    mutationFn: async ({ foodId, isAvailable, day }: { foodId: string; isAvailable?: boolean; day?: string }) => {
+      return await apiService.toggleFoodAvailability(foodId, isAvailable, day);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-foods'] });
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
+      toast({
+        title: 'Menu Updated',
+        description: 'Product availability schedule has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update item availability.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Bulk toggle food availability for all products
+  const bulkToggleFoodMutation = useMutation({
+    mutationFn: async ({ isAvailable, day }: { isAvailable: boolean; day?: string }) => {
+      return await apiService.bulkToggleFoodAvailability({ isAvailable, day, all: true });
+    },
+    onSuccess: (res, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-foods'] });
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
+      toast({
+        title: 'Bulk Menu Updated',
+        description: `All products have been ${vars.isAvailable ? 'made available' : 'hidden'} for ${vars.day ? vars.day.toUpperCase() : 'selected schedule'}.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update all products in bulk.',
+        variant: 'destructive',
+      });
+    },
   });
 
   // Update order status mutation
@@ -117,7 +205,7 @@ export const AdminDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       toast({
-        title: 'Order updated',
+        title: 'Order Updated',
         description: 'Order status has been updated successfully.',
       });
       setIsOrderDialogOpen(false);
@@ -145,17 +233,17 @@ export const AdminDashboard: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-foods'] });
       queryClient.invalidateQueries({ queryKey: ['foods'] });
+      toast({
+        title: 'Food Item Added',
+        description: 'New food item has been added successfully.',
+      });
+      setIsAddFoodDialogOpen(false);
       setNewFood({
         name: '',
         price: '',
         category: '',
         description: '',
         available: true
-      });
-      setIsAddFoodDialogOpen(false);
-      toast({
-        title: 'Food added',
-        description: 'New food item has been added successfully.',
       });
     },
     onError: () => {
@@ -176,8 +264,8 @@ export const AdminDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-foods'] });
       queryClient.invalidateQueries({ queryKey: ['foods'] });
       toast({
-        title: 'Food deleted',
-        description: 'Food item has been deleted successfully.',
+        title: 'Food Item Deleted',
+        description: 'Food item has been removed from the menu.',
       });
     },
     onError: () => {
@@ -189,35 +277,26 @@ export const AdminDashboard: React.FC = () => {
     },
   });
 
-  const getStatusIcon = (status: Order['status']) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4" />;
-      case 'preparing':
-        return <ChefHat className="h-4 w-4" />;
-      case 'ready':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'delivered':
-        return <Truck className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
+  // Filtered orders
+  const filteredOrders = useMemo(() => {
+    if (!orders) return [];
+    return orders.filter((order: Order) => {
+      const idMatch = order._id.toLowerCase().includes(orderSearchQuery.toLowerCase());
+      const customerName = ((order as any).student?.name || order.studentName || '').toLowerCase();
+      const customerMatch = customerName.includes(orderSearchQuery.toLowerCase());
+      const statusMatch = orderStatusFilter === 'all' || order.status === orderStatusFilter;
+      return (idMatch || customerMatch) && statusMatch;
+    });
+  }, [orders, orderSearchQuery, orderStatusFilter]);
 
-  const getStatusColor = (status: Order['status']) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'preparing':
-        return 'bg-blue-500';
-      case 'ready':
-        return 'bg-green-500';
-      case 'delivered':
-        return 'bg-gray-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
+  // Filtered foods
+  const filteredFoods = useMemo(() => {
+    if (!foods) return [];
+    return foods.filter((food: Food) => {
+      const q = foodSearchQuery.toLowerCase();
+      return (food.name || '').toLowerCase().includes(q) || (food.category || '').toLowerCase().includes(q);
+    });
+  }, [foods, foodSearchQuery]);
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrder(order);
@@ -245,303 +324,537 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+  const getOrderStatusBadge = (status: Order['status']) => {
+    switch (status) {
+      case 'completed':
+      case 'delivered':
+        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200">Delivered</Badge>;
+      case 'dispatched':
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">In Transit</Badge>;
+      case 'ready':
+        return <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 border-indigo-200">Ready</Badge>;
+      case 'preparing':
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200">Preparing</Badge>;
+      case 'cancelled':
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">{status}</Badge>;
+      default:
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 border-orange-200">Pending</Badge>;
+    }
   };
 
-  const isLoading = statsLoading || ordersLoading || studentsLoading || foodsLoading;
-  const hasError = !stats && !statsLoading;
+  const availableFoodsCount = foods ? foods.filter((f: Food) => f.available).length : 0;
+  const totalFoodsCount = foods ? foods.length : 0;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="space-y-8"
+        transition={{ duration: 0.4 }}
+        className="max-w-7xl mx-auto space-y-6"
       >
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-2">Manage your restaurant operations</p>
-            {adminEmail && (
-              <p className="text-sm text-gray-500 mt-1">Logged in as: {adminEmail}</p>
-            )}
+        {/* Top Header Card */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+              <ChefHat className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Operations Portal</h1>
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Live Monitoring
+                </Badge>
+              </div>
+              <p className="text-sm text-slate-500 mt-1">
+                Nayomi's Waterfront &bull; Smart School Breakfast Distribution System
+                {adminEmail && <span className="ml-2 font-medium text-slate-700">({adminEmail})</span>}
+              </p>
+            </div>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <Button
+              onClick={handleRefreshAll}
+              variant="outline"
+              size="sm"
+              className="text-slate-600 border-slate-200 hover:bg-slate-100"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${statsFetching ? 'animate-spin' : ''}`} />
+              Sync
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <motion.div variants={cardVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {statsLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{stats?.totalStudents || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="inline h-3 w-3 mr-1" />
-                      Registered users
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+        {/* 4 KPI Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <Card className="border-slate-200 shadow-sm hover:shadow transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Customers</CardTitle>
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Users className="h-5 w-5" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {statsLoading ? (
+                <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
+              ) : (
+                <>
+                  <div className="text-3xl font-extrabold text-slate-900">{stats?.totalStudents || 0}</div>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
+                    Registered student accounts
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-          <motion.div variants={cardVariants} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {statsLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <Clock className="inline h-3 w-3 mr-1" />
-                      {stats?.pendingOrders || 0} pending • {stats?.todayOrders || 0} today
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+          <Card className="border-slate-200 shadow-sm hover:shadow transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
+              <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {statsLoading ? (
+                <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
+              ) : (
+                <>
+                  <div className="text-3xl font-extrabold text-slate-900">{stats?.totalOrders || 0}</div>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-orange-600" />
+                    <span className="font-semibold text-orange-600">{stats?.pendingOrders || 0}</span> pending &bull; {stats?.todayOrders || 0} today
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-          <motion.div variants={cardVariants} initial="hidden" animate="visible" transition={{ delay: 0.3 }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {statsLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">₹{stats?.totalRevenue?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="inline h-3 w-3 mr-1" />
-                      From completed orders
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+          <Card className="border-slate-200 shadow-sm hover:shadow transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Revenue</CardTitle>
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <DollarSign className="h-5 w-5" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {statsLoading ? (
+                <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
+              ) : (
+                <>
+                  <div className="text-3xl font-extrabold text-slate-900">
+                    Rs. {stats?.totalRevenue?.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                    Verified completed orders
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-          <motion.div variants={cardVariants} initial="hidden" animate="visible" transition={{ delay: 0.4 }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Menu Items</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {statsLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{stats?.totalFoods || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <Package className="inline h-3 w-3 mr-1" />
-                      Available dishes
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+          <Card className="border-slate-200 shadow-sm hover:shadow transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Next-Day Menu</CardTitle>
+              <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                <Package className="h-5 w-5" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {foodsLoading ? (
+                <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
+              ) : (
+                <>
+                  <div className="text-3xl font-extrabold text-slate-900">
+                    {availableFoodsCount} <span className="text-sm font-normal text-slate-500">/ {totalFoodsCount} active</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Available for student pre-order
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Main Content */}
+        {/* Unified Operational Tabs */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="menu">Menu</TabsTrigger>
-            <TabsTrigger value="customers">Customers</TabsTrigger>
+          <TabsList className="bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="orders" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Orders
+              {orders && orders.length > 0 && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-800 data-[state=active]:bg-orange-600 data-[state=active]:text-white">
+                  {orders.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="menu" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2">
+              <ChefHat className="h-4 w-4" />
+              Next-Day Menu
+              <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-800">
+                {availableFoodsCount}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="devices" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2">
+              <Cpu className="h-4 w-4" />
+              Smart Boxes
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4" />
+              Safety Alerts
+            </TabsTrigger>
+            <TabsTrigger value="customers" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Customers
+            </TabsTrigger>
           </TabsList>
 
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>
-                  Manage and track customer orders
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {ordersLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    <span className="ml-2 text-gray-500">Loading orders...</span>
+          {/* ===================== TAB 1: ORDERS ===================== */}
+          <TabsContent value="orders" className="space-y-4">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle className="text-lg font-bold text-slate-900">Breakfast Delivery Orders</CardTitle>
+                  <CardDescription>Track status, school delivery locations, and smart box assignments</CardDescription>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <div className="relative">
+                    <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      placeholder="Search Order ID or student..."
+                      value={orderSearchQuery}
+                      onChange={(e) => setOrderSearchQuery(e.target.value)}
+                      className="pl-9 h-9 w-full sm:w-64 text-sm"
+                    />
                   </div>
-                ) : !orders || orders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <FileX className="h-12 w-12 text-gray-300 mb-3" />
-                    <h3 className="text-lg font-semibold text-gray-700 mb-1">No Orders Yet</h3>
-                    <p className="text-sm text-gray-500">Orders will appear here once customers start placing them.</p>
+                  <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                    <SelectTrigger className="h-9 w-full sm:w-36 text-sm">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="preparing">Preparing</SelectItem>
+                      <SelectItem value="ready">Ready</SelectItem>
+                      <SelectItem value="dispatched">In Transit</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                {ordersLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                    <Loader2 className="h-8 w-8 animate-spin mb-3 text-orange-500" />
+                    <span>Loading real-time orders...</span>
+                  </div>
+                ) : filteredOrders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center text-slate-500">
+                    <FileX className="h-12 w-12 text-slate-300 mb-3" />
+                    <h3 className="text-base font-semibold text-slate-700">No Orders Match Your Filter</h3>
+                    <p className="text-sm text-slate-400 mt-1">Try adjusting the search query or status filter above.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-lg border border-slate-100">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-slate-50/70">
                         <TableRow>
-                          <TableHead>Order ID</TableHead>
-                          <TableHead>Customer</TableHead>
-                          <TableHead>Items</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Order ID</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Student Name</TableHead>
+                          <TableHead className="font-semibold text-slate-700">School & Pickup</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Items</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Total</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Placed At</TableHead>
+                          <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orders.slice(0, 20).map((order: Order) => (
-                          <TableRow key={order._id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleOrderClick(order)}>
-                            <TableCell className="font-mono text-sm">
+                        {filteredOrders.map((order: Order) => (
+                          <TableRow 
+                            key={order._id} 
+                            className="cursor-pointer hover:bg-slate-50/80 transition-colors"
+                            onClick={() => handleOrderClick(order)}
+                          >
+                            <TableCell className="font-mono text-xs font-bold text-slate-800">
                               #{order._id.slice(-6).toUpperCase()}
                             </TableCell>
-                            <TableCell className="font-medium">
-                              {(order as any).student?.name || order.studentName || 'Guest'}
+                            <TableCell className="font-medium text-slate-900">
+                              {(order as any).student?.name || order.studentName || 'Student'}
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-600">
+                              <div className="font-medium text-slate-800">{order.pickupLocation || 'Main Canteen'}</div>
+                              <div className="text-slate-400">Pickup: {order.pickupTime || 'Morning Break'}</div>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-600">
+                              {order.items?.length || 0} item(s)
+                            </TableCell>
+                            <TableCell className="font-bold text-slate-900 text-sm">
+                              Rs. {(order.total || 0).toFixed(2)}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary">{order.items?.length || 0} items</Badge>
+                              {getOrderStatusBadge(order.status)}
                             </TableCell>
-                            <TableCell className="font-semibold">₹{order.total?.toFixed(2) || '0.00'}</TableCell>
-                            <TableCell>
-                              <Badge className={`${getStatusColor(order.status)} text-white`}>
-                                <div className="flex items-center space-x-1">
-                                  {getStatusIcon(order.status)}
-                                  <span className="capitalize">{order.status}</span>
-                                </div>
-                              </Badge>
+                            <TableCell className="text-xs text-slate-500">
+                              {order.createdAt ? format(new Date(order.createdAt), 'MMM dd, h:mm a') : 'N/A'}
                             </TableCell>
-                            <TableCell className="text-sm">
-                              {order.createdAt ? format(new Date(order.createdAt), 'MMM dd, HH:mm') : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOrderClick(order);
-                                }}
-                              >
-                                View
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="sm" className="h-8 text-xs font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50">
+                                Review &rarr;
                               </Button>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                    {orders.length > 20 && (
-                      <div className="mt-4 text-center text-sm text-gray-500">
-                        Showing 20 of {orders.length} orders
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Menu Tab */}
-          <TabsContent value="menu" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold">Menu Management</h2>
-                <p className="text-gray-600">Add, edit, and remove menu items</p>
-              </div>
-              <Button onClick={() => setIsAddFoodDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Food Item
-              </Button>
-            </div>
-
-            <Card>
-              <CardContent className="pt-6">
-                {foodsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    <span className="ml-2 text-gray-500">Loading menu items...</span>
+          {/* ===================== TAB 2: NEXT-DAY MENU ===================== */}
+          <TabsContent value="menu" className="space-y-4">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-3 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg font-bold text-slate-900">Next-Day & Daily Menu Schedule</CardTitle>
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800 font-semibold">
+                        Next School Day: {nextSchoolDayName}
+                      </Badge>
+                    </div>
+                    <CardDescription className="mt-1">
+                      Configure exactly which meals students can see and pre-order for the next school day ({nextSchoolDayName}) and upcoming weekdays (Mon–Fri).
+                    </CardDescription>
                   </div>
-                ) : !foods || foods.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Package className="h-12 w-12 text-gray-300 mb-3" />
-                    <h3 className="text-lg font-semibold text-gray-700 mb-1">No Menu Items</h3>
-                    <p className="text-sm text-gray-500 mb-4">Add your first menu item to get started.</p>
-                    <Button onClick={() => setIsAddFoodDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-60">
+                      <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        placeholder="Search menu dishes..."
+                        value={foodSearchQuery}
+                        onChange={(e) => setFoodSearchQuery(e.target.value)}
+                        className="pl-9 h-9 text-sm"
+                      />
+                    </div>
+                    <Button onClick={() => setIsAddFoodDialogOpen(true)} className="bg-orange-600 hover:bg-orange-700 h-9 text-sm">
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Add Dish
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Advanced Quick Schedule & Bulk Controls */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-500 mr-1">Filter View:</span>
+                    {[
+                      { key: 'all', label: 'All Items' },
+                      { key: 'tomorrow', label: `Next School Day (${nextSchoolDayName.slice(0, 3)})` },
+                      { key: 'monday', label: 'Mon' },
+                      { key: 'tuesday', label: 'Tue' },
+                      { key: 'wednesday', label: 'Wed' },
+                      { key: 'thursday', label: 'Thu' },
+                      { key: 'friday', label: 'Fri' },
+                    ].map((d) => (
+                      <Button
+                        key={d.key}
+                        type="button"
+                        size="sm"
+                        variant={selectedMenuDay === d.key ? 'default' : 'outline'}
+                        onClick={() => setSelectedMenuDay(d.key)}
+                        className={`h-7 px-2.5 text-xs ${
+                          selectedMenuDay === d.key
+                            ? 'bg-slate-900 text-white hover:bg-slate-800'
+                            : 'text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {d.label}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Bulk Change Buttons */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={bulkToggleFoodMutation.isPending}
+                      onClick={() => bulkToggleFoodMutation.mutate({ 
+                        isAvailable: true, 
+                        day: selectedMenuDay === 'all' ? nextSchoolDayKey : (selectedMenuDay === 'tomorrow' ? nextSchoolDayKey : selectedMenuDay) 
+                      })}
+                      className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      title="Enable all products for the selected school day"
+                    >
+                      ✓ Enable All for {selectedMenuDay === 'tomorrow' || selectedMenuDay === 'all' ? nextSchoolDayName : selectedMenuDay.toUpperCase()}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={bulkToggleFoodMutation.isPending}
+                      onClick={() => bulkToggleFoodMutation.mutate({ 
+                        isAvailable: false, 
+                        day: selectedMenuDay === 'all' ? nextSchoolDayKey : (selectedMenuDay === 'tomorrow' ? nextSchoolDayKey : selectedMenuDay) 
+                      })}
+                      className="h-7 text-xs border-rose-300 text-rose-700 hover:bg-rose-50"
+                      title="Hide all products for the selected school day"
+                    >
+                      ✗ Disable All
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                {foodsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                    <Loader2 className="h-8 w-8 animate-spin mb-3 text-orange-500" />
+                    <span>Loading menu items...</span>
+                  </div>
+                ) : filteredFoods.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center text-slate-500">
+                    <Package className="h-12 w-12 text-slate-300 mb-3" />
+                    <h3 className="text-base font-semibold text-slate-700">No Food Items Found</h3>
+                    <p className="text-sm text-slate-400 mt-1 mb-4">Click "Add Dish" to introduce new breakfast meals to the system.</p>
+                    <Button onClick={() => setIsAddFoodDialogOpen(true)} className="bg-orange-600 hover:bg-orange-700">
                       <Plus className="mr-2 h-4 w-4" />
                       Add First Item
                     </Button>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-lg border border-slate-100">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-slate-50/70">
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Dish Name</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Category</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Unit Price</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Next School Day ({nextSchoolDayName})</TableHead>
+                          <TableHead className="font-semibold text-slate-700">School Weekdays (Mon - Fri)</TableHead>
+                          <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {foods.map((food: Food) => (
-                          <TableRow key={food._id}>
-                            <TableCell className="font-medium">{food.name || 'Unnamed Item'}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{food.category || 'Uncategorized'}</Badge>
-                            </TableCell>
-                            <TableCell className="font-semibold">₹{food.price?.toFixed(2) || '0.00'}</TableCell>
-                            <TableCell>
-                              <Badge variant={food.available ? "default" : "destructive"}>
-                                {food.available ? 'Available' : 'Unavailable'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button variant="outline" size="sm" title="Edit item">
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeleteFood(food._id)}
-                                  disabled={deleteFoodMutation.isPending}
-                                  title="Delete item"
-                                >
-                                  {deleteFoodMutation.isPending ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-3 w-3" />
+                        {filteredFoods
+                          .filter((food: Food) => {
+                            if (selectedMenuDay === 'all') return true;
+                            const targetKey = selectedMenuDay === 'tomorrow' ? nextSchoolDayKey : selectedMenuDay;
+                            if (food.available === false) return false;
+                            if (!food.availableDays) return true;
+                            return food.availableDays[targetKey] !== false;
+                          })
+                          .map((food: Food) => {
+                            const isNextSchoolDayActive = food.available !== false && (!food.availableDays || food.availableDays[nextSchoolDayKey] !== false);
+                            const daysList = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+                            return (
+                              <TableRow key={food._id} className="hover:bg-slate-50/70 transition-colors">
+                                <TableCell className="font-medium text-slate-900">
+                                  <div>{food.name || 'Unnamed Dish'}</div>
+                                  {food.description && (
+                                    <div className="text-xs text-slate-500 truncate max-w-xs">{food.description}</div>
                                   )}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-slate-600 border-slate-300 bg-slate-50">
+                                    {food.category || 'Breakfast'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-bold text-slate-900">
+                                  Rs. {food.price?.toFixed(2) || '0.00'}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant={isNextSchoolDayActive ? "default" : "outline"}
+                                    className={isNextSchoolDayActive 
+                                      ? "bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-8 shadow-sm" 
+                                      : "border-rose-300 text-rose-600 hover:bg-rose-50 text-xs h-8"}
+                                    onClick={() => toggleFoodMutation.mutate({ 
+                                      foodId: food._id, 
+                                      day: nextSchoolDayKey, 
+                                      isAvailable: !isNextSchoolDayActive 
+                                    })}
+                                    disabled={toggleFoodMutation.isPending}
+                                    title={`Click to toggle availability for next school day (${nextSchoolDayName})`}
+                                  >
+                                    {isNextSchoolDayActive ? `✓ Available ${nextSchoolDayName}` : `✗ Hidden ${nextSchoolDayName}`}
+                                  </Button>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1.5">
+                                    {daysList.map((day) => {
+                                      const isDayActive = food.available !== false && (!food.availableDays || food.availableDays[day] !== false);
+                                      const isTargetDay = day === nextSchoolDayKey;
+                                      const dayLabels: Record<string, string> = {
+                                        monday: 'M',
+                                        tuesday: 'T',
+                                        wednesday: 'W',
+                                        thursday: 'Th',
+                                        friday: 'F'
+                                      };
+                                      return (
+                                        <button
+                                          key={day}
+                                          type="button"
+                                          onClick={() => toggleFoodMutation.mutate({
+                                            foodId: food._id,
+                                            day,
+                                            isAvailable: !isDayActive
+                                          })}
+                                          disabled={toggleFoodMutation.isPending}
+                                          className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-all ${
+                                            isDayActive
+                                              ? 'bg-emerald-500 text-white shadow-xs hover:bg-emerald-600'
+                                              : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                          } ${isTargetDay ? 'ring-2 ring-orange-500 ring-offset-1' : ''}`}
+                                          title={`${day.toUpperCase()}: ${isDayActive ? 'Available' : 'Unavailable'} (Click to toggle)`}
+                                        >
+                                          {dayLabels[day]}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteFood(food._id)}
+                                    disabled={deleteFoodMutation.isPending}
+                                    className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                    title="Delete item"
+                                  >
+                                    {deleteFoodMutation.isPending ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                       </TableBody>
                     </Table>
                   </div>
@@ -550,55 +863,68 @@ export const AdminDashboard: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Customers Tab */}
-          <TabsContent value="customers" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Management</CardTitle>
-                <CardDescription>
-                  View and manage customer accounts
-                </CardDescription>
+          {/* ===================== TAB 3: SMART BOXES (IoT) ===================== */}
+          <TabsContent value="devices" className="space-y-4">
+            <AdminDevices />
+          </TabsContent>
+
+          {/* ===================== TAB 4: SAFETY ALERTS ===================== */}
+          <TabsContent value="alerts" className="space-y-4">
+            <AdminAlerts />
+          </TabsContent>
+
+          {/* ===================== TAB 5: CUSTOMERS ===================== */}
+          <TabsContent value="customers" className="space-y-4">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-3 border-b border-slate-100">
+                <CardTitle className="text-lg font-bold text-slate-900">Registered Student Directory</CardTitle>
+                <CardDescription>View enrolled students, schools, grades, and loyalty points</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 {studentsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    <span className="ml-2 text-gray-500">Loading customers...</span>
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                    <Loader2 className="h-8 w-8 animate-spin mb-3 text-orange-500" />
+                    <span>Loading student records...</span>
                   </div>
                 ) : !students || students.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Users className="h-12 w-12 text-gray-300 mb-3" />
-                    <h3 className="text-lg font-semibold text-gray-700 mb-1">No Customers Yet</h3>
-                    <p className="text-sm text-gray-500">Customer accounts will appear here after registration.</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center text-slate-500">
+                    <Users className="h-12 w-12 text-slate-300 mb-3" />
+                    <h3 className="text-base font-semibold text-slate-700">No Customers Registered</h3>
+                    <p className="text-sm text-slate-400 mt-1">Student accounts will appear here automatically upon app registration.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-lg border border-slate-100">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-slate-50/70">
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>School</TableHead>
-                          <TableHead>Orders</TableHead>
-                          <TableHead>Loyalty Points</TableHead>
-                          <TableHead>Joined</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Student Name</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Email Address</TableHead>
+                          <TableHead className="font-semibold text-slate-700">School & Grade</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Order Count</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Loyalty Points</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Joined</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {students.map((student: Student) => (
-                          <TableRow key={student._id}>
-                            <TableCell className="font-medium">{student.name || 'Unknown'}</TableCell>
-                            <TableCell className="text-sm">{student.email || 'N/A'}</TableCell>
-                            <TableCell className="text-sm">{(student as any).school || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{student.orders?.length || 0} orders</Badge>
+                          <TableRow key={student._id} className="hover:bg-slate-50/70 transition-colors">
+                            <TableCell className="font-medium text-slate-900">{student.name || 'Student'}</TableCell>
+                            <TableCell className="text-xs text-slate-600 font-mono">{student.email || 'N/A'}</TableCell>
+                            <TableCell className="text-xs text-slate-700">
+                              <div className="font-medium">{(student as any).school || 'Registered School'}</div>
+                              <div className="text-slate-400">Grade: {(student as any).grade || 'N/A'}</div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="font-semibold">
-                                ⭐ {student.points || 0} points
+                              <Badge variant="outline" className="bg-slate-50 text-slate-700">
+                                {student.orders?.length || 0} orders
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-sm">
+                            <TableCell>
+                              <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 font-semibold gap-1">
+                                ⭐ {student.points || 0} pts
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500">
                               {student.createdAt ? format(new Date(student.createdAt), 'MMM dd, yyyy') : 'N/A'}
                             </TableCell>
                           </TableRow>
@@ -613,74 +939,95 @@ export const AdminDashboard: React.FC = () => {
         </Tabs>
       </motion.div>
 
-      {/* Order Details Dialog */}
+      {/* Order Details & Status Update Dialog */}
       <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              Order #{selectedOrder?._id.slice(-6).toUpperCase()}
-            </DialogTitle>
+            <div className="flex items-center justify-between pr-6">
+              <DialogTitle className="text-xl font-bold">
+                Order #{selectedOrder?._id.slice(-6).toUpperCase()}
+              </DialogTitle>
+              {selectedOrder && getOrderStatusBadge(selectedOrder.status)}
+            </div>
             <DialogDescription>
-              Manage order status and view details
+              Review breakfast meal items and advance kitchen workflow status
             </DialogDescription>
           </DialogHeader>
 
           {selectedOrder && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-100 text-sm">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Customer</label>
-                  <p className="font-semibold">{(selectedOrder as any).student?.name || selectedOrder.studentName || 'Guest Customer'}</p>
+                  <span className="text-xs font-semibold uppercase text-slate-400 block">Student Customer</span>
+                  <p className="font-semibold text-slate-800">
+                    {(selectedOrder as any).student?.name || selectedOrder.studentName || 'Student'}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Order Date</label>
-                  <p className="font-semibold">
+                  <span className="text-xs font-semibold uppercase text-slate-400 block">School Destination</span>
+                  <p className="font-semibold text-slate-800">
+                    {selectedOrder.pickupLocation || 'School Main Canteen'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold uppercase text-slate-400 block">Ordered At</span>
+                  <p className="text-slate-600">
                     {selectedOrder.createdAt ? format(new Date(selectedOrder.createdAt), 'PPP p') : 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold uppercase text-slate-400 block">Smart Box Assignment</span>
+                  <p className="text-slate-700 font-mono font-medium">
+                    {(selectedOrder as any).delivery?.boxId || 'Unassigned (Waiting for dispatch)'}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-2 border-t">
-                <label className="text-sm font-medium text-gray-600 mb-2 block">Order Items</label>
-                <div className="space-y-2">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500 mb-2 block tracking-wider">Ordered Meal Items</label>
+                <div className="space-y-2 max-h-56 overflow-y-auto">
                   {selectedOrder.items && selectedOrder.items.length > 0 ? (
                     selectedOrder.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{item.foodName || (item as any).foodItem?.name || 'Unknown Item'}</p>
-                          <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
+                      <div key={index} className="flex justify-between items-center p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                        <div>
+                          <p className="font-semibold text-slate-800 text-sm">{item.foodName || (item as any).foodItem?.name || 'Breakfast Dish'}</p>
+                          <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">₹{((item.quantity || 1) * (item.price || 0)).toFixed(2)}</p>
-                          <p className="text-xs text-gray-500">₹{(item.price || 0).toFixed(2)} each</p>
+                          <p className="font-bold text-slate-900 text-sm">Rs. {((item.quantity || 1) * (item.price || 0)).toFixed(2)}</p>
+                          <p className="text-xs text-slate-400">Rs. {(item.price || 0).toFixed(2)} ea</p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">No items in this order</p>
+                    <p className="text-sm text-slate-500">No meal items recorded.</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
-                <span className="font-semibold text-lg">Total Amount</span>
-                <span className="font-bold text-2xl text-green-600">₹{(selectedOrder.total || 0).toFixed(2)}</span>
+              <div className="flex justify-between items-center pt-3 border-t border-slate-200">
+                <span className="font-semibold text-slate-700">Total Order Amount:</span>
+                <span className="font-extrabold text-2xl text-emerald-600">
+                  Rs. {(selectedOrder.total || 0).toFixed(2)}
+                </span>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Update Status</label>
+              <div className="pt-2 border-t border-slate-100">
+                <label className="text-xs font-bold uppercase text-slate-500 mb-2 block tracking-wider">Advance Kitchen Status</label>
                 <Select
                   value={selectedOrder.status}
                   onValueChange={(value) => handleStatusUpdate(value as Order['status'])}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="preparing">Preparing</SelectItem>
-                    <SelectItem value="ready">Ready</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="pending">Pending (Received)</SelectItem>
+                    <SelectItem value="preparing">Preparing (In Kitchen)</SelectItem>
+                    <SelectItem value="ready">Ready (Packed in Smart Box)</SelectItem>
+                    <SelectItem value="dispatched">In Transit (Vehicle Driver)</SelectItem>
+                    <SelectItem value="delivered">Delivered (Handed over at School)</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -691,60 +1038,64 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Add Food Dialog */}
       <Dialog open={isAddFoodDialogOpen} onOpenChange={setIsAddFoodDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Food Item</DialogTitle>
+            <DialogTitle>Add New Breakfast Dish</DialogTitle>
             <DialogDescription>
-              Create a new menu item for your restaurant
+              Introduce a new dish to the pre-order catalog
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             <div>
-              <label className="text-sm font-medium">Name</label>
+              <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Dish Name</label>
               <Input
                 value={newFood.name}
                 onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
-                placeholder="Food item name"
+                placeholder="e.g., Egg Roti, Milk Rice, Bun"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Category</label>
+              <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Category</label>
               <Input
                 value={newFood.category}
                 onChange={(e) => setNewFood({ ...newFood, category: e.target.value })}
-                placeholder="e.g., Rice, Koththu, Beverages"
+                placeholder="e.g., Breakfast, Short Eats, Bakery"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Price</label>
+              <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Unit Price (Rs.)</label>
               <Input
                 type="number"
-                step="0.01"
+                step="1"
                 value={newFood.price}
                 onChange={(e) => setNewFood({ ...newFood, price: e.target.value })}
-                placeholder="0.00"
+                placeholder="150.00"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Description</label>
+              <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Description</label>
               <Input
                 value={newFood.description}
                 onChange={(e) => setNewFood({ ...newFood, description: e.target.value })}
-                placeholder="Brief description of the item"
+                placeholder="Fresh ingredients, nutritional notes..."
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button variant="outline" onClick={() => setIsAddFoodDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddFood} disabled={addFoodMutation.isPending}>
-              {addFoodMutation.isPending ? 'Adding...' : 'Add Item'}
+            <Button 
+              onClick={handleAddFood} 
+              disabled={addFoodMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {addFoodMutation.isPending ? 'Saving...' : 'Add Item'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -51,19 +51,73 @@ const updateFoodPrice = async (req, res) => {
 const toggleAvailability = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isAvailable } = req.body;
+    let { isAvailable, day, availableDays } = req.body || {};
 
-    const foodItem = await FoodItem.findByIdAndUpdate(
-      id,
-      { available: isAvailable },
-      { new: true }
-    );
-
-    if (!foodItem) {
+    const existing = await FoodItem.findById(id);
+    if (!existing) {
       return res.status(404).json({ message: 'Food item not found' });
     }
 
-    res.json({ message: 'Availability updated successfully', foodItem });
+    if (day) {
+      const dayKey = day.toLowerCase();
+      if (!existing.availableDays) {
+        existing.availableDays = {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: true,
+          sunday: true
+        };
+      }
+      const currentVal = existing.availableDays[dayKey] !== false;
+      existing.availableDays[dayKey] = (isAvailable !== undefined) ? Boolean(isAvailable) : !currentVal;
+      existing.markModified('availableDays');
+    } else if (availableDays && typeof availableDays === 'object') {
+      existing.availableDays = { ...existing.availableDays, ...availableDays };
+      existing.markModified('availableDays');
+    } else {
+      if (isAvailable === undefined) {
+        isAvailable = !existing.available;
+      }
+      existing.available = Boolean(isAvailable);
+    }
+
+    await existing.save();
+
+    res.json({
+      success: true,
+      message: 'Availability updated successfully',
+      foodItem: existing,
+      available: existing.available,
+      availableDays: existing.availableDays
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const bulkUpdateAvailability = async (req, res) => {
+  try {
+    const { isAvailable, day, all = true, ids } = req.body || {};
+    const filter = (!all && Array.isArray(ids) && ids.length > 0) ? { _id: { $in: ids } } : {};
+
+    if (day) {
+      const dayKey = day.toLowerCase();
+      const updateField = `availableDays.${dayKey}`;
+      await FoodItem.updateMany(filter, { $set: { [updateField]: Boolean(isAvailable) } });
+    } else {
+      await FoodItem.updateMany(filter, { $set: { available: Boolean(isAvailable) } });
+    }
+
+    const updatedItems = await FoodItem.find();
+    res.json({
+      success: true,
+      message: `Bulk availability set to ${isAvailable ? 'available' : 'unavailable'}${day ? ` for ${day}` : ''}`,
+      count: updatedItems.length,
+      foods: updatedItems
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -71,39 +125,57 @@ const toggleAvailability = async (req, res) => {
 
 const getFoodList = async (req, res) => {
   try {
-    const { day } = req.query;
+    const { day, nextDay } = req.query;
     const foodItems = await FoodItem.find();
-    
+
+    let targetDayKey = null;
     if (day) {
-      const dayKey = day.toLowerCase();
+      targetDayKey = day.toLowerCase();
+    } else if (nextDay === 'true') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      targetDayKey = days[tomorrow.getDay()];
+    }
+
+    if (targetDayKey) {
       const filteredItems = foodItems.map(item => {
-        const isAvailableToday = item.availableDays[dayKey] && item.available;
-        
-        if (!isAvailableToday) {
-          return {
-            ...item.toObject(),
-            isAvailable: false,
-            disabled: true,
-            message: "This item is not ready for that day"
-          };
-        }
-        
+        const itemObj = item.toObject();
+        const daysMap = itemObj.availableDays || {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: true,
+          sunday: true
+        };
+        const isScheduled = daysMap[targetDayKey] !== false;
+        const isAvailableForDay = isScheduled && itemObj.available !== false;
+
         return {
-          ...item.toObject(),
-          isAvailable: item.available,
-          disabled: false
+          ...itemObj,
+          available: isAvailableForDay,
+          isAvailable: isAvailableForDay,
+          disabled: !isAvailableForDay,
+          message: isAvailableForDay ? undefined : "This item is not scheduled for this day"
         };
       });
-      
+
       return res.json(filteredItems);
     }
-    
-    // Add isAvailable field for consistency
-    const formattedItems = foodItems.map(item => ({
-      ...item.toObject(),
-      isAvailable: item.available
-    }));
-    
+
+    // Default list
+    const formattedItems = foodItems.map(item => {
+      const itemObj = item.toObject();
+      const isAvail = itemObj.available !== false;
+      return {
+        ...itemObj,
+        available: isAvail,
+        isAvailable: isAvail
+      };
+    });
+
     res.json(formattedItems);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -214,6 +286,7 @@ module.exports = {
   deleteFoodItem,
   getFoodById,
   toggleAvailability,
+  bulkUpdateAvailability,
   getFoodList,
   getFoodByDay
 };

@@ -36,8 +36,12 @@ import {
   BarChart3,
   PieChart,
   Activity,
-  Plus
+  Plus,
+  Box,
+  ShieldAlert
 } from 'lucide-react';
+import { AdminDevices } from './AdminDevices';
+import { AdminAlerts } from './AdminAlerts';
 import { apiService } from '@/services/api';
 import { Order, Student, Food } from '@/types';
 import { format } from 'date-fns';
@@ -108,10 +112,37 @@ export const EnhancedAdminDashboard: React.FC = () => {
     queryKey: ['admin-foods'],
     queryFn: async () => {
       const response = await apiService.getFoods();
-      if (response.success && response.data) {
-        return response.data.foods;
+      if (Array.isArray(response)) {
+        return response;
       }
-      throw new Error(response.message || 'Failed to fetch foods');
+      if (response && response.success && response.data) {
+        return response.data.foods || (Array.isArray(response.data) ? response.data : []);
+      }
+      if (response && (response as any).foods && Array.isArray((response as any).foods)) {
+        return (response as any).foods;
+      }
+      return [];
+    },
+  });
+
+  const toggleFoodMutation = useMutation({
+    mutationFn: async ({ foodId, isAvailable }: { foodId: string; isAvailable?: boolean }) => {
+      return await apiService.toggleFoodAvailability(foodId, isAvailable);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-foods'] });
+      queryClient.invalidateQueries({ queryKey: ['foods'] });
+      toast({
+        title: 'Menu Updated',
+        description: 'Next-day breakfast item availability updated.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update item availability.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -441,7 +472,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid bg-white shadow-sm">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid bg-white shadow-sm">
             <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
               <BarChart3 className="h-4 w-4 mr-2" />
               Overview
@@ -449,6 +480,14 @@ export const EnhancedAdminDashboard: React.FC = () => {
             <TabsTrigger value="orders" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
               <ShoppingCart className="h-4 w-4 mr-2" />
               Orders
+            </TabsTrigger>
+            <TabsTrigger value="devices" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              <Box className="h-4 w-4 mr-2" />
+              Smart Boxes
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              <ShieldAlert className="h-4 w-4 mr-2" />
+              Safety Alerts
             </TabsTrigger>
             <TabsTrigger value="customers" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
               <Users className="h-4 w-4 mr-2" />
@@ -815,9 +854,17 @@ export const EnhancedAdminDashboard: React.FC = () => {
                                   {food.category}
                                 </Badge>
                               </div>
-                              <Badge variant={food.available ? "default" : "destructive"}>
-                                {food.available ? 'Available' : 'Out of Stock'}
-                              </Badge>
+                              <Button
+                                size="sm"
+                                variant={food.available ? "default" : "outline"}
+                                className={food.available 
+                                  ? "bg-green-600 hover:bg-green-700 text-white text-xs h-7" 
+                                  : "border-red-300 text-red-600 hover:bg-red-50 text-xs h-7"}
+                                onClick={() => toggleFoodMutation.mutate({ foodId: food._id, isAvailable: !food.available })}
+                                disabled={toggleFoodMutation.isPending}
+                              >
+                                {food.available ? '✓ Available Next Day' : '✗ Hidden'}
+                              </Button>
                             </div>
                             <p className="text-sm text-gray-600">{food.description}</p>
                             <div className="flex justify-between items-center pt-3 border-t">
@@ -836,6 +883,16 @@ export const EnhancedAdminDashboard: React.FC = () => {
                 </ScrollArea>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Smart Delivery Boxes Fleet Tab */}
+          <TabsContent value="devices" className="space-y-6">
+            <AdminDevices />
+          </TabsContent>
+
+          {/* Safety & Incident Alerts Tab */}
+          <TabsContent value="alerts" className="space-y-6">
+            <AdminAlerts />
           </TabsContent>
         </Tabs>
       </div>

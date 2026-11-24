@@ -24,6 +24,8 @@ abstract final class AppColors {
   static const statusOffline = Color(0xFF64748B);
 
   // Compatibility aliases used by existing features.
+  static const primary = brandPrimary;
+  static const secondary = brandSecondary;
   static const deepBlue = brandSecondary;
   static const deepBlueDark = brandSecondaryDark;
   static const gold = brandAccent;

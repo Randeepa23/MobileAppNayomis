@@ -84,8 +84,12 @@ router.get('/verify', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Admin verification error:', error);
-    res.status(401).json({ message: 'Invalid or expired token' });
+    if (error.name === 'TokenExpiredError') {
+      // Normal token expiration, prompt user to log in again
+      return res.status(401).json({ message: 'Token expired', valid: false });
+    }
+    console.error('Admin verification error:', error.message);
+    res.status(401).json({ message: 'Invalid or expired token', valid: false });
   }
 });
 
