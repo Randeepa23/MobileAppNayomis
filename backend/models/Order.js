@@ -118,6 +118,12 @@ orderSchema.index({ status: 1 });
 orderSchema.index({ deliveryDate: 1, pickupLocation: 1 });
 orderSchema.index({ scheduleId: 1 });
 orderSchema.index({ 'payment.status': 1 });
-orderSchema.index({ student: 1, 'request.idempotencyKey': 1 }, { unique: true, sparse: true });
+orderSchema.index(
+  { student: 1, 'request.idempotencyKey': 1 },
+  {
+    unique: true,
+    partialFilterExpression: { 'request.idempotencyKey': { $type: 'string' } }
+  }
+);
 
 module.exports = mongoose.model('Order', orderSchema);

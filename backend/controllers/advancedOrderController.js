@@ -145,6 +145,11 @@ const placeAdvancedOrder = async (req, res) => {
         method: paymentMethod,
         amount: total,
         status: 'pending'
+      },
+
+      request: {
+        idempotencyKey: req.headers['idempotency-key'] || req.body.idempotencyKey || undefined,
+        fingerprint: req.headers['user-agent'] || undefined
       }
     });
 
