@@ -174,35 +174,40 @@ class CheckoutValidationService {
   }
 
   /**
-   * Validate cut-off time constraint
+   * Validate cut-off time constraint (Strict 12:00 AM midnight cutoff)
+   * Orders must be placed BEFORE 12:00 AM of the selected delivery date.
+   * Once 12:00 AM (start of delivery day) arrives, orders for that day are closed.
    */
   validateCutoffTime(deliveryDate, cutoffTime) {
     const now = new Date();
-    const deliveryDateObj = new Date(deliveryDate);
-    deliveryDateObj.setHours(0, 0, 0, 0);
+    let deliveryDateObj;
+    if (typeof deliveryDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) {
+      const [y, m, d] = deliveryDate.split('-').map(Number);
+      deliveryDateObj = new Date(y, m - 1, d, 0, 0, 0, 0);
+    } else {
+      deliveryDateObj = new Date(deliveryDate);
+      deliveryDateObj.setHours(0, 0, 0, 0);
+    }
     
-    // Calculate cut-off datetime (previous day at cutoffTime)
+    // Cut-off is strictly 12:00 AM midnight at the start of delivery date
     const cutoffDate = new Date(deliveryDateObj);
-    cutoffDate.setDate(cutoffDate.getDate() - 1);
+    cutoffDate.setHours(0, 0, 0, 0);
     
-    const [cutoffHour, cutoffMinute] = cutoffTime.split(':').map(Number);
-    cutoffDate.setHours(cutoffHour, cutoffMinute, 0, 0);
-    
-    if (now > cutoffDate) {
+    if (now >= cutoffDate) {
       return {
         valid: false,
-        message: `Order deadline passed. Orders for ${deliveryDateObj.toDateString()} must be placed before ${cutoffTime} on ${cutoffDate.toDateString()}`
+        message: `Order deadline passed. Orders for ${deliveryDateObj.toLocaleDateString()} closed at 12:00 AM midnight. Same-day ordering is not available.`
       };
     }
     
-    // Check if close to deadline (within 2 hours)
+    // Check if close to midnight deadline (within 2 hours before 12:00 AM)
     const timeUntilCutoff = cutoffDate - now;
     const hoursUntilCutoff = timeUntilCutoff / (1000 * 60 * 60);
     
     if (hoursUntilCutoff < 2 && hoursUntilCutoff > 0) {
       return {
         valid: true,
-        warning: `Order deadline is in ${Math.round(hoursUntilCutoff * 60)} minutes. Please complete checkout soon.`
+        warning: `Midnight deadline (12:00 AM) is in ${Math.round(hoursUntilCutoff * 60)} minutes. Please complete checkout before midnight.`
       };
     }
     

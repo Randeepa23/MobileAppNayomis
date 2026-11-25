@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -208,19 +208,42 @@ export const StudentSelectionCheckout: React.FC = () => {
     setValidationResult(null);
   }, [selectedStudent?._id, selectedPickupPoint, deliveryDate, timeSlot, paymentMethod, cart.items, cart.total]);
 
-  // Get minimum delivery date (tomorrow)
-  const getMinimumDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+  // Format Date to YYYY-MM-DD using local time
+  const formatLocalDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
-  // Get maximum delivery date (7 days ahead)
+  // Get minimum delivery date (strict advance ordering: cannot order for today or past days)
+  const getMinimumDate = () => {
+    const target = new Date();
+    target.setDate(target.getDate() + 1); // Strictly tomorrow or later
+    // If tomorrow is Saturday (6), advance to Monday (+2)
+    if (target.getDay() === 6) {
+      target.setDate(target.getDate() + 2);
+    } else if (target.getDay() === 0) {
+      target.setDate(target.getDate() + 1);
+    }
+    return formatLocalDate(target);
+  };
+
+  // Get maximum delivery date (14 days ahead)
   const getMaximumDate = () => {
     const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 7);
-    return maxDate.toISOString().split('T')[0];
+    maxDate.setDate(maxDate.getDate() + 14);
+    return formatLocalDate(maxDate);
   };
+
+  // Check if selected deliveryDate has passed the 12:00 AM midnight cutoff
+  const isPastCutoff = useMemo(() => {
+    if (!deliveryDate) return false;
+    const [y, m, d] = deliveryDate.split('-').map(Number);
+    if (!y || !m || !d) return false;
+    const cutoff = new Date(y, m - 1, d, 0, 0, 0, 0); // 12:00 AM midnight on delivery date
+    return new Date() >= cutoff;
+  }, [deliveryDate]);
 
   // Validate checkout before proceeding
   const validateCheckout = async () => {
@@ -258,6 +281,16 @@ export const StudentSelectionCheckout: React.FC = () => {
       toast({
         title: "Date and time required",
         description: "Please select delivery date and time slot",
+        variant: "destructive",
+      });
+      navigateToStep(3, true);
+      return false;
+    }
+
+    if (isPastCutoff) {
+      toast({
+        title: "Order Cutoff Passed",
+        description: "Orders for this date closed at 12:00 AM midnight. Pre-orders cannot be placed on the delivery day.",
         variant: "destructive",
       });
       navigateToStep(3, true);
@@ -840,8 +873,16 @@ export const StudentSelectionCheckout: React.FC = () => {
                       className="border-gray-300 focus:border-orange-500 h-11"
                     />
                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                      Orders must be placed at least 1 day in advance.
+                      Orders must be placed before 12:00 AM midnight. Same-day orders cannot be placed on the morning of delivery.
                     </p>
+                    {isPastCutoff && (
+                      <Alert className="border-rose-300 bg-rose-50 text-rose-800">
+                        <AlertCircle className="h-4 w-4 text-rose-600" />
+                        <AlertDescription>
+                          Orders for this delivery date are unavailable (Cutoff passed at 12:00 AM midnight). Please choose an upcoming school day.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
 
                   {deliveryDate && timeSlotsData?.timeSlots && (
@@ -862,12 +903,12 @@ export const StudentSelectionCheckout: React.FC = () => {
                             <Button
                               variant={timeSlot === slot.slot ? "default" : "outline"}
                               onClick={() => setTimeSlot(slot.slot)}
-                              disabled={slot.available === false}
+                              disabled={isPastCutoff || slot.available === false}
                               className={`w-full h-14 transition-colors rounded-lg ${
                                 timeSlot === slot.slot 
                                   ? 'bg-orange-600 hover:bg-orange-700 text-white border-orange-600'
                                   : 'hover:border-orange-300 border-gray-200'
-                              } ${slot.available === false ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              } ${(isPastCutoff || slot.available === false) ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <Clock className="h-5 w-5 mr-2" />
                               <span className="font-semibold">{slot.slot}</span>
@@ -891,7 +932,7 @@ export const StudentSelectionCheckout: React.FC = () => {
                     <Button 
                       onClick={goToNextStep} 
                       className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
-                      disabled={!deliveryDate || !timeSlot}
+                      disabled={!deliveryDate || !timeSlot || isPastCutoff}
                       size="lg"
                     >
                       Continue

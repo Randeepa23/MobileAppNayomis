@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -116,19 +116,38 @@ export const IntelligentCheckout: React.FC = () => {
     }
   }, [cart.items.length, orderPlaced, navigate, toast]);
 
-  // Get minimum delivery date (tomorrow)
-  const getMinimumDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+  // Format Date to YYYY-MM-DD using local time
+  const formatLocalDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
-  // Get maximum delivery date (7 days ahead)
+  // Get minimum delivery date (strict advance ordering: cannot order for today or past days)
+  const getMinimumDate = () => {
+    const target = new Date();
+    target.setDate(target.getDate() + 1); // Strictly tomorrow or later
+    if (target.getDay() === 6) target.setDate(target.getDate() + 2);
+    else if (target.getDay() === 0) target.setDate(target.getDate() + 1);
+    return formatLocalDate(target);
+  };
+
+  // Get maximum delivery date (14 days ahead)
   const getMaximumDate = () => {
     const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 7);
-    return maxDate.toISOString().split('T')[0];
+    maxDate.setDate(maxDate.getDate() + 14);
+    return formatLocalDate(maxDate);
   };
+
+  // Check if selected deliveryDate has passed the 12:00 AM midnight cutoff
+  const isPastCutoff = useMemo(() => {
+    if (!deliveryDate) return false;
+    const [y, m, d] = deliveryDate.split('-').map(Number);
+    if (!y || !m || !d) return false;
+    const cutoff = new Date(y, m - 1, d, 0, 0, 0, 0); // 12:00 AM midnight on delivery date
+    return new Date() >= cutoff;
+  }, [deliveryDate]);
 
   // Validate checkout before proceeding
   const validateCheckout = async () => {
@@ -517,8 +536,13 @@ export const IntelligentCheckout: React.FC = () => {
                       className="mt-2"
                     />
                     <p className="text-sm text-gray-500 mt-2">
-                      Orders must be placed before 8:00 PM on the previous day
+                      Orders must be placed before 12:00 AM midnight. Orders cannot be placed on the delivery day.
                     </p>
+                    {isPastCutoff && (
+                      <p className="text-sm text-red-600 font-medium mt-2">
+                        Orders for this delivery date are unavailable (Cutoff passed at 12:00 AM midnight).
+                      </p>
+                    )}
                   </div>
 
                   {deliveryDate && timeSlotsData?.timeSlots && (
@@ -531,7 +555,7 @@ export const IntelligentCheckout: React.FC = () => {
                             variant={timeSlot === slot.slot ? "default" : "outline"}
                             onClick={() => setTimeSlot(slot.slot)}
                             className="w-full"
-                            disabled={slot.currentBookings >= slot.capacity}
+                            disabled={isPastCutoff || slot.currentBookings >= slot.capacity}
                           >
                             <Clock className="h-4 w-4 mr-2" />
                             {slot.slot}
@@ -548,7 +572,7 @@ export const IntelligentCheckout: React.FC = () => {
                     <Button 
                       onClick={goToNextStep} 
                       className="flex-1"
-                      disabled={!deliveryDate || !timeSlot}
+                      disabled={!deliveryDate || !timeSlot || isPastCutoff}
                     >
                       Continue
                     </Button>
