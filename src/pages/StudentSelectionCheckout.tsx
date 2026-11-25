@@ -134,7 +134,8 @@ export const StudentSelectionCheckout: React.FC = () => {
     enabled: !!selectedPickupPoint && step === 3,
   });
 
-  const requiredLoyaltyPoints = Math.ceil(cart.total * 100);
+  // Calculate loyalty points: 1 point per Rs 100 (e.g. Rs 120 = 1.2 points)
+  const requiredLoyaltyPoints = Number((cart.total / 100).toFixed(1));
   const availableLoyaltyPoints = selectedStudent?.points ?? 0;
 
   // Redirect if not authenticated

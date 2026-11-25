@@ -174,7 +174,7 @@ const placeAdvancedOrder = async (req, res) => {
     // Cash and online payments remain pending. Loyalty points are deducted immediately.
     try {
       if (paymentMethod === 'loyalty_points') {
-        const requiredPoints = Math.ceil(total * 100);
+        const requiredPoints = Number((total / 100).toFixed(1));
         const updatedStudent = await Student.findOneAndUpdate(
           { _id: studentId, points: { $gte: requiredPoints } },
           { $inc: { points: -requiredPoints } },
@@ -235,8 +235,8 @@ const placeAdvancedOrder = async (req, res) => {
 
     console.log('🏆 Step 8: Loyalty Points Award');
     
-    // Award loyalty points
-    const pointsEarned = paymentMethod === 'loyalty_points' ? 0 : Math.floor(total);
+    // Award loyalty points (1 point per Rs 100 spent, e.g. Rs 120 = 1.2 points)
+    const pointsEarned = paymentMethod === 'loyalty_points' ? 0 : Number((total / 100).toFixed(1));
     if (pointsEarned > 0) {
       await Student.findByIdAndUpdate(
         studentId,

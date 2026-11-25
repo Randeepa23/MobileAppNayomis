@@ -56,12 +56,12 @@ const placeOrder = async (req, res) => {
         });
       }
       
-      // Validate points usage
-      const maxPointsToUse = Math.min(student.points, Math.floor(total * 100));
+      // Validate points usage (1 point = Rs 100, e.g. Rs 120 = 1.2 points)
+      const maxPointsToUse = Math.min(student.points, Number((total / 100).toFixed(1)));
       const actualPointsToUse = Math.min(pointsToUse, maxPointsToUse);
       
       if (actualPointsToUse > 0) {
-        pointsDiscount = actualPointsToUse * 0.01;
+        pointsDiscount = actualPointsToUse * 100;
         total = Math.max(0, total - pointsDiscount);
         
         // Deduct points from student
@@ -72,7 +72,7 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    const pointsEarned = Math.floor(total);
+    const pointsEarned = Number((total / 100).toFixed(1));
 
     const order = new Order({
       student: studentId,

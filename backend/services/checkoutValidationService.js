@@ -127,7 +127,8 @@ class CheckoutValidationService {
         const total = checkoutData.total || 0;
 
         if (paymentMethod === 'loyalty_points') {
-          const requiredPoints = Math.ceil(total * 100);
+          // 1 loyalty point per Rs 100 spent (e.g. Rs 120 = 1.2 points)
+          const requiredPoints = Number((total / 100).toFixed(1));
           const availablePoints = student.points || 0;
 
           validationResults.metadata.requiredLoyaltyPoints = requiredPoints;
