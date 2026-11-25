@@ -52,7 +52,10 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const token = localStorage.getItem('nayomis_admin_token') || localStorage.getItem('nayomis_token');
+      const isAdminRoute = endpoint.startsWith('/admin') || endpoint.startsWith('/alerts');
+      const token = isAdminRoute
+        ? (localStorage.getItem('nayomis_admin_token') || localStorage.getItem('nayomis_token'))
+        : (localStorage.getItem('nayomis_token') || localStorage.getItem('nayomis_admin_token'));
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...options.headers as Record<string, string>,
@@ -80,7 +83,7 @@ class ApiService {
           // Keep the HTTP fallback when the backend did not return JSON.
         }
 
-        if (response.status === 401 || ['SESSION_EXPIRED', 'INVALID_TOKEN', 'TOKEN_REQUIRED', 'CUSTOMER_TOKEN_REQUIRED'].includes(code || '')) {
+        if (!isAdminRoute && (response.status === 401 && ['SESSION_EXPIRED', 'INVALID_TOKEN'].includes(code || ''))) {
           invalidateCustomerSession(message, code);
         }
 

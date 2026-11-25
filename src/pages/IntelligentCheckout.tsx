@@ -67,7 +67,7 @@ export const IntelligentCheckout: React.FC = () => {
   const [orderId, setOrderId] = useState('');
 
   const { cart, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -94,7 +94,7 @@ export const IntelligentCheckout: React.FC = () => {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!user) {
+    if (!isAuthLoading && !user) {
       toast({
         title: "Authentication required",
         description: "Please sign in to continue with checkout",
@@ -102,7 +102,7 @@ export const IntelligentCheckout: React.FC = () => {
       });
       navigate('/');
     }
-  }, [user, navigate, toast]);
+  }, [isAuthLoading, user, navigate, toast]);
 
   // Redirect if cart is empty
   useEffect(() => {

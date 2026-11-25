@@ -41,17 +41,17 @@ export const Checkout: React.FC = () => {
   const [orderId, setOrderId] = useState('');
 
   const { cart, clearCart, updateQuantity, removeFromCart, getTotalItems } = useCart();
-  const { user, syncLoyaltyPoints } = useAuth();
+  const { user, isLoading: isAuthLoading, syncLoyaltyPoints } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if not authenticated
   React.useEffect(() => {
-    if (!user) {
+    if (!isAuthLoading && !user) {
       navigate('/');
       return;
     }
-  }, [user, navigate]);
+  }, [isAuthLoading, user, navigate]);
 
   // Redirect if cart is empty
   React.useEffect(() => {

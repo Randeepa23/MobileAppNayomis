@@ -13,8 +13,12 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return !!localStorage.getItem('nayomis_admin_token');
+  });
+  const [adminEmail, setAdminEmail] = useState<string | null>(() => {
+    return localStorage.getItem('nayomis_admin_email');
+  });
 
   // Check for existing admin token on mount
   useEffect(() => {

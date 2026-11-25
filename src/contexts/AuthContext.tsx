@@ -46,11 +46,25 @@ const normalizeStudent = (student: Student): Student => ({
 });
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<Student | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<Student | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('nayomis_user');
+      const savedToken = localStorage.getItem('nayomis_token');
+      if (savedUser && savedToken) {
+        return normalizeStudent(JSON.parse(savedUser));
+      }
+    } catch (e) {
+      console.error('Error restoring stored user session:', e);
+    }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    const savedUser = localStorage.getItem('nayomis_user');
+    const savedToken = localStorage.getItem('nayomis_token');
+    return !savedUser || !savedToken;
+  });
 
-  // A cached user is not proof that its token is still valid. Restore the
-  // session only after the backend verifies the token.
+  // Revalidate session with backend on mount, but keep cached user state immediately active
   useEffect(() => {
     const savedUser = localStorage.getItem('nayomis_user');
     const savedToken = localStorage.getItem('nayomis_token');
@@ -71,17 +85,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       try {
-        JSON.parse(savedUser);
         const response = await apiService.getCurrentStudent();
-        if (!response.success || !response.data?.student) throw new Error('Session validation failed');
-        if (active) {
+        if (response.success && response.data?.student && active) {
           const student = normalizeStudent(response.data.student);
           setUser(student);
           localStorage.setItem('nayomis_user', JSON.stringify(student));
         }
-      } catch (error) {
-        console.error('Unable to restore customer session:', error);
-        clearSession();
+      } catch (error: any) {
+        console.warn('Backend session verification check:', error);
+        // Only invalidate if the backend explicitly rejected the token as expired/invalid
+        const isAuthRejection = error?.status === 401 || ['SESSION_EXPIRED', 'INVALID_TOKEN'].includes(error?.code);
+        if (isAuthRejection) {
+          console.warn('Session expired or token invalid, clearing session.');
+          clearSession();
+        }
       } finally {
         if (active) setIsLoading(false);
       }

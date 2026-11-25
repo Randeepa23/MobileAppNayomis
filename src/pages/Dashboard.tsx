@@ -26,7 +26,7 @@ const isDashboardSection = (value: unknown): value is DashboardSection => (
 );
 
 const Dashboard = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = location.state as DashboardRouteState | null;
@@ -35,9 +35,17 @@ const Dashboard = () => {
   ));
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Redirect to home if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to home only when authentication loading is confirmed false
+  if (!isLoading && !isAuthenticated) {
     return <Navigate to="/" replace />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+      </div>
+    );
   }
 
   const handleSectionChange = (section: DashboardSection) => {
