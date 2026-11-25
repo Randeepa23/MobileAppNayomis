@@ -283,7 +283,7 @@ const ingestReading = async (req, res) => {
 };
 
 const orderNumber = (order) => `#${String(order._id).slice(-6).toUpperCase()}`;
-const orderDeviceId = (order) => order.delivery?.boxId || null;
+const orderDeviceId = (order) => order.delivery?.boxId || (TERMINAL_ORDER_STATUSES.includes(order.status) ? null : 'BOX-001');
 
 const verifyOrderAccess = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.orderId)) {
@@ -340,7 +340,8 @@ const getLatestReading = async (req, res) => {
     const serverNow = new Date();
     const deviceId = orderDeviceId(order);
     const latest = deviceId
-      ? await SensorReading.findOne({ order: order._id, deviceId }).sort({ receivedAt: -1 }).lean()
+      ? (await SensorReading.findOne({ order: order._id, deviceId }).sort({ receivedAt: -1 }).lean()
+         || await SensorReading.findOne({ deviceId }).sort({ receivedAt: -1 }).lean())
       : null;
     return res.json({
       success: true,
@@ -374,7 +375,11 @@ const getReadingHistory = async (req, res) => {
     let newest = null;
 
     if (deviceId) {
-      const filter = { order: order._id, deviceId };
+      let filter = { order: order._id, deviceId };
+      const orderReadingCount = await SensorReading.countDocuments(filter);
+      if (orderReadingCount === 0) {
+        filter = { deviceId };
+      }
       [readings, total, newest] = await Promise.all([
         SensorReading.find(filter).sort({ receivedAt: -1 }).skip((page - 1) * perPage).limit(perPage).lean(),
         SensorReading.countDocuments(filter),

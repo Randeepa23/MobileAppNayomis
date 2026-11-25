@@ -202,6 +202,22 @@ const placeAdvancedOrder = async (req, res) => {
       order.pickupPointId = pickupPointId;
       order.school = pickupPoint.school.name;
 
+      // Auto-assign smart delivery box for real-time monitoring
+      try {
+        const availableBox = await DeliveryBox.findOne({ status: { $in: ['idle', 'assigned'] } }) || await DeliveryBox.findOne({});
+        if (availableBox) {
+          order.delivery = order.delivery || {};
+          order.delivery.boxId = availableBox.boxId;
+          order.delivery.assignedAt = new Date();
+          availableBox.status = 'in-transit';
+          availableBox.orderId = order._id;
+          availableBox.assignedDate = new Date();
+          await availableBox.save();
+        }
+      } catch (boxAssignErr) {
+        console.warn('Smart box auto-assignment note:', boxAssignErr.message);
+      }
+
       await order.save();
 
     } catch (paymentError) {
