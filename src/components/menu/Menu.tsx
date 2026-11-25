@@ -25,23 +25,31 @@ export const Menu: React.FC<MenuProps> = ({ searchTerm = '', selectedCategory = 
     queryKey: ['foods'],
     queryFn: async () => {
       const response = await apiService.getFoods();
-      if (response.success && response.data) {
-        return response.data.foods;
+      if (Array.isArray(response)) {
+        return response;
       }
-      throw new Error(response.message || 'Failed to fetch foods');
+      if (response && response.success && response.data) {
+        return response.data.foods || (Array.isArray(response.data) ? response.data : []);
+      }
+      if (response && (response as any).foods && Array.isArray((response as any).foods)) {
+        return (response as any).foods;
+      }
+      return [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 20000, // Auto-refresh every 20 seconds to sync with admin changes
   });
 
-  const tomorrowDayKey = React.useMemo(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextSchoolDayKey = React.useMemo(() => {
+    const target = new Date();
+    target.setDate(target.getDate() + 1);
+    if (target.getDay() === 6) target.setDate(target.getDate() + 2);
+    else if (target.getDay() === 0) target.setDate(target.getDate() + 1);
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    return days[tomorrow.getDay()];
+    return days[target.getDay()];
   }, []);
 
-  // Filter foods based on search, category, and tomorrow's availability
+  // Filter foods based on search, category, and target school day availability
   const filteredFoods = React.useMemo(() => {
     if (!foodsResponse) return [];
     
@@ -50,10 +58,10 @@ export const Menu: React.FC<MenuProps> = ({ searchTerm = '', selectedCategory = 
                           food.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || 
                             food.category.toLowerCase() === selectedCategory.toLowerCase();
-      const isDayScheduled = !food.availableDays || food.availableDays[tomorrowDayKey] !== false;
-      return matchesSearch && matchesCategory && food.available && isDayScheduled;
+      const isDayScheduled = food.available !== false && (!food.availableDays || food.availableDays[nextSchoolDayKey] !== false);
+      return matchesSearch && matchesCategory && isDayScheduled;
     });
-  }, [foodsResponse, searchTerm, selectedCategory, tomorrowDayKey]);
+  }, [foodsResponse, searchTerm, selectedCategory, nextSchoolDayKey]);
 
   // Get unique categories
   const categories = React.useMemo(() => {

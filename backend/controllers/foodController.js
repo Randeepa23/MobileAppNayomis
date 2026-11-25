@@ -132,10 +132,13 @@ const getFoodList = async (req, res) => {
     if (day) {
       targetDayKey = day.toLowerCase();
     } else if (nextDay === 'true') {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const target = new Date();
+      target.setDate(target.getDate() + 1);
+      // Skip Saturday & Sunday for school breakfast deliveries
+      if (target.getDay() === 6) target.setDate(target.getDate() + 2);
+      else if (target.getDay() === 0) target.setDate(target.getDate() + 1);
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      targetDayKey = days[tomorrow.getDay()];
+      targetDayKey = days[target.getDay()];
     }
 
     if (targetDayKey) {
@@ -147,8 +150,8 @@ const getFoodList = async (req, res) => {
           wednesday: true,
           thursday: true,
           friday: true,
-          saturday: true,
-          sunday: true
+          saturday: false,
+          sunday: false
         };
         const isScheduled = daysMap[targetDayKey] !== false;
         const isAvailableForDay = isScheduled && itemObj.available !== false;
@@ -192,7 +195,17 @@ const getFoodByDay = async (req, res) => {
     const unavailableItems = [];
     
     foodItems.forEach(item => {
-      const isAvailableToday = item.availableDays[dayKey] && item.available;
+      const daysMap = item.availableDays || {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      };
+      const isDayActive = daysMap[dayKey] !== false;
+      const isAvailableToday = isDayActive && item.available !== false;
       
       if (isAvailableToday) {
         availableItems.push(item);

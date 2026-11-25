@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { Food } from '@/types';
+import { API_BASE_URL } from '@/services/api';
 import fishRollImage from '@/assets/Fish Roll.webp';
 import fishBunImage from '@/assets/fish bun.jpg';
 import fishPastryImage from '@/assets/fish pastry.jpg';
@@ -99,7 +100,7 @@ export const Menu: React.FC = () => {
   const { data, isLoading, error, refetch } = useQuery<DailyMenuResponse>({
     queryKey: ['foods', 'short-eats', 'day', selectedDay],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5000/api/food/day/${selectedDay}`);
+      const response = await fetch(`${API_BASE_URL}/food/day/${selectedDay}`);
       if (!response.ok) {
         throw new Error('Failed to fetch the daily menu');
       }
@@ -116,10 +117,10 @@ export const Menu: React.FC = () => {
 
   const availableFoods = data?.available ?? EMPTY_AVAILABLE_FOODS;
   const unavailableFoods = data?.unavailable ?? EMPTY_UNAVAILABLE_FOODS;
-  const hasPublishedMenu = availableFoods.length + unavailableFoods.length > 0;
+  const hasPublishedMenu = availableFoods.length > 0;
   const catalogFoodIds = useMemo(
-    () => new Set([...availableFoods, ...unavailableFoods].map((food) => food._id)),
-    [availableFoods, unavailableFoods]
+    () => new Set(availableFoods.map((food) => food._id)),
+    [availableFoods]
   );
 
   useEffect(() => {
@@ -360,24 +361,6 @@ export const Menu: React.FC = () => {
                       </section>
                     ))}
                   </div>
-                )}
-
-                {!isLoading && unavailableFoods.length > 0 && (
-                  <section className="mt-10 border-t border-slate-200 pt-8">
-                    <h2 className="text-lg font-bold text-slate-800">Other menu items</h2>
-                    <p className="mt-1 text-sm text-slate-500">These items are not prepared on {selectedDayLabel}.</p>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {unavailableFoods.map((food) => (
-                        <div key={food._id} className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 opacity-70">
-                          <div>
-                            <p className="font-semibold text-slate-700">{food.name}</p>
-                            <p className="text-sm text-slate-500">{food.category || 'Menu item'}</p>
-                          </div>
-                          <Badge variant="outline" className="shrink-0 text-slate-500">Not available</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
                 )}
               </div>
 
