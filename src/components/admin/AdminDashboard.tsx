@@ -994,8 +994,8 @@ export const AdminDashboard: React.FC = () => {
                           <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-slate-900 text-sm">Rs. {((item.quantity || 1) * (item.price || 0)).toFixed(2)}</p>
-                          <p className="text-xs text-slate-400">Rs. {(item.price || 0).toFixed(2)} ea</p>
+                          <p className="font-bold text-slate-900 text-sm">Rs. {((item.quantity || 1) * (item.price || (item as any).foodItem?.price || 0)).toFixed(2)}</p>
+                          <p className="text-xs text-slate-400">Rs. {(item.price || (item as any).foodItem?.price || 0).toFixed(2)} ea</p>
                         </div>
                       </div>
                     ))

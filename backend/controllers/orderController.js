@@ -160,27 +160,45 @@ const updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     
-    // Validate status
-    const validStatuses = ['pending', 'confirmed', 'completed'];
+    // Validate status against all valid pipeline kitchen/delivery statuses
+    const validStatuses = [
+      'pending',
+      'validated',
+      'confirmed',
+      'preparing',
+      'ready',
+      'dispatched',
+      'delivered',
+      'completed',
+      'cancelled',
+      'rejected'
+    ];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      return res.status(400).json({ success: false, message: `Invalid status: ${status}` });
     }
     
     const order = await Order.findById(id);
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
     const previousStatus = order.status;
     order.status = status;
     await order.save();
 
-    // Note: Loyalty points are now awarded immediately when order is placed,
-    // so we don't need to award them again when completing the order
+    // Populate order items and student details for clean response
+    const populatedOrder = await Order.findById(order._id)
+      .populate('items.foodItem')
+      .populate('student');
 
-    res.json({ message: `Order ${status} successfully`, order });
+    res.json({ 
+      success: true, 
+      message: `Order status updated to ${status} successfully`, 
+      data: populatedOrder,
+      order: populatedOrder 
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
