@@ -4,7 +4,7 @@ const eventLogSchema = new mongoose.Schema({
   eventType: {
     type: String,
     enum: ['order_placed', 'order_validated', 'order_rejected', 'payment_success', 'payment_failed',
-           'cutoff_reached', 'preparation_started', 'delivery_assigned', 'delivery_completed',
+           'cutoff_reached', 'preparation_started', 'delivery_assigned', 'delivery_dispatched', 'delivery_completed',
            'temperature_alert', 'student_absent', 'order_cancelled', 'refund_issued', 'system_error'],
     required: true,
     index: true

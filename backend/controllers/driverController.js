@@ -234,11 +234,86 @@ const getDriverProfile = async (req, res) => {
   }
 };
 
+const updateDeliveryStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, notes = '' } = req.body;
+
+    const validStatuses = ['ready', 'dispatched', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    const now = new Date();
+    order.status = status;
+    order.delivery = order.delivery || {};
+
+    if (status === 'dispatched') {
+      order.delivery.dispatchedAt = now;
+      if (order.delivery.boxId) {
+        await DeliveryBox.updateOne(
+          { boxId: order.delivery.boxId },
+          { $set: { status: 'in-transit' } }
+        );
+      }
+    } else if (status === 'delivered') {
+      order.delivery.deliveredAt = now;
+      if (order.payment?.method === 'cash_on_delivery') {
+        order.payment.status = 'completed';
+        order.payment.paidAt = now;
+      }
+      if (order.delivery.boxId) {
+        await DeliveryBox.updateOne(
+          { boxId: order.delivery.boxId },
+          { $set: { status: 'idle', orderId: null, deliveredDate: now } }
+        );
+      }
+    }
+
+    await order.save();
+
+    const eventType = status === 'dispatched'
+      ? 'delivery_dispatched'
+      : status === 'delivered'
+        ? 'delivery_completed'
+        : status === 'cancelled'
+          ? 'order_cancelled'
+          : 'order_validated';
+
+    await EventLog.create({
+      eventType,
+      severity: 'info',
+      entityType: 'order',
+      entityId: order._id,
+      userId: req.driver?.driverId || null,
+      message: `Driver updated order ${order._id} delivery status to ${status}. Notes: ${notes}`,
+    });
+
+    return res.json({
+      success: true,
+      message: `Delivery status successfully updated to ${status}.`,
+      data: { orderId: String(order._id), status: order.status },
+    });
+  } catch (error) {
+    console.error('Update delivery status error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to update delivery status.' });
+  }
+};
+
 module.exports = {
   getDriverDeliveries,
   confirmDispatch,
   completeHandover,
   reportIncident,
   getDriverProfile,
+  updateDeliveryStatus,
 };
 

@@ -108,6 +108,18 @@ class DriverRepository {
     }
   }
 
+  Future<void> updateStatus(String orderId, String status, {String notes = ''}) async {
+    try {
+      await _dio.put(
+        'driver/deliveries/$orderId/status',
+        data: {'status': status, 'notes': notes},
+        options: Options(extra: {'requiresAuth': true}),
+      );
+    } catch (error) {
+      throw ApiErrorMapper.from(error);
+    }
+  }
+
   Future<void> reportIncident(String orderId, String incidentType, String description) async {
     try {
       await _dio.post(

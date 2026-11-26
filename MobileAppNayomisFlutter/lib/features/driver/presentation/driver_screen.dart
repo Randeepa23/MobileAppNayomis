@@ -69,6 +69,64 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
     }
   }
 
+  Future<void> _handleStatusUpdate(String orderId, String newStatus) async {
+    try {
+      await ref.read(driverRepositoryProvider).updateStatus(orderId, newStatus);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delivery status updated to ${newStatus.toUpperCase()} in Atlas.')),
+      );
+      ref.invalidate(driverDeliveriesProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  void _showStatusDialog(String orderId, String currentStatus) {
+    String selected = currentStatus;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Update Delivery Status'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select delivery progress state to update in MongoDB Atlas:'),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: ['ready', 'dispatched', 'delivered', 'cancelled'].contains(selected) ? selected : 'ready',
+                decoration: const InputDecoration(labelText: 'Delivery Status', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'ready', child: Text('Ready for Dispatch')),
+                  DropdownMenuItem(value: 'dispatched', child: Text('Dispatched (In Transit)')),
+                  DropdownMenuItem(value: 'delivered', child: Text('Delivered (Handover Complete)')),
+                  DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selected = val);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _handleStatusUpdate(orderId, selected);
+              },
+              child: const Text('Update in Atlas'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showIncidentDialog(String orderId) {
     final messenger = ScaffoldMessenger.of(context);
     showDialog(
@@ -210,6 +268,7 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
                     delivery: d,
                     onDispatch: () => _handleDispatch(d.orderId),
                     onHandover: () => _handleHandover(d.orderId),
+                    onUpdateStatus: () => _showStatusDialog(d.orderId, d.status),
                     onReportIncident: () => _showIncidentDialog(d.orderId),
                   )).toList(),
                 );
@@ -227,12 +286,14 @@ class _DriverDeliveryCard extends StatelessWidget {
     required this.delivery,
     required this.onDispatch,
     required this.onHandover,
+    required this.onUpdateStatus,
     required this.onReportIncident,
   });
 
   final DriverDelivery delivery;
   final VoidCallback onDispatch;
   final VoidCallback onHandover;
+  final VoidCallback onUpdateStatus;
   final VoidCallback onReportIncident;
 
   @override
@@ -345,6 +406,13 @@ class _DriverDeliveryCard extends StatelessWidget {
                       onPressed: onHandover,
                     ),
                   ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
+                  icon: const Icon(Icons.edit_note_rounded, size: 18),
+                  label: const Text('Status'),
+                  onPressed: onUpdateStatus,
+                ),
                 const SizedBox(width: 8),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(foregroundColor: Colors.red.shade700),
