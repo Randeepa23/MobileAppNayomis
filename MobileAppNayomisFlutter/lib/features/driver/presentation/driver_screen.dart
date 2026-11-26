@@ -26,11 +26,13 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
   Future<void> _handleDispatch(String orderId) async {
     try {
       await ref.read(driverRepositoryProvider).confirmDispatch(orderId);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Delivery marked as dispatched (In Transit).')),
       );
-      ref.refresh(driverDeliveriesProvider);
+      ref.invalidate(driverDeliveriesProvider);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
@@ -55,17 +57,20 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
     if (confirmed == true) {
       try {
         await ref.read(driverRepositoryProvider).completeHandover(orderId);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Delivery successfully recorded as completed.')),
         );
-        ref.refresh(driverDeliveriesProvider);
+        ref.invalidate(driverDeliveriesProvider);
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
 
   void _showIncidentDialog(String orderId) {
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -75,7 +80,7 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: _incidentType,
+                initialValue: _incidentType,
                 decoration: const InputDecoration(labelText: 'Incident Type'),
                 items: const [
                   DropdownMenuItem(value: 'temperature_breach', child: Text('Temperature Breach')),
@@ -113,12 +118,12 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
                     _incidentController.text,
                   );
                   _incidentController.clear();
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Incident report logged to backend.')),
                   );
-                  ref.refresh(driverDeliveriesProvider);
+                  ref.invalidate(driverDeliveriesProvider);
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                  messenger.showSnackBar(SnackBar(content: Text(e.toString())));
                 }
               },
               child: const Text('Submit Report'),

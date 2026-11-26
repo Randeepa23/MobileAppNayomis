@@ -134,20 +134,27 @@ class ProfileScreen extends ConsumerWidget {
                     onTap: () => context.go('/rewards'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                   ),
-                  if (customer.isDriver) ...[
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.local_shipping_outlined,
-                        color: AppColors.brandPrimary,
-                      ),
-                      title: const Text('Driver & Delivery Portal'),
-                      subtitle: const Text('Manage smart box dispatches & handovers'),
-                      onTap: () => context.push('/driver'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                    ),
-                  ],
                 ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Operations & Perspectives',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Card(
+              child: ListTile(
+                leading: const Icon(
+                  Icons.local_shipping_outlined,
+                  color: AppColors.brandPrimary,
+                ),
+                title: const Text('Driver & Delivery Portal'),
+                subtitle: const Text(
+                  'Manage smart box dispatches, live telemetry & handovers',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push('/driver'),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),

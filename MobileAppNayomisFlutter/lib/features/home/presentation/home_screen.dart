@@ -56,6 +56,11 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            onPressed: () => context.push('/driver'),
+            tooltip: 'Driver Operations',
+            icon: const Icon(Icons.local_shipping_outlined),
+          ),
+          IconButton(
             onPressed: () => context.push('/notifications'),
             tooltip: 'Notifications',
             icon: const Icon(Icons.notifications_outlined),
@@ -139,6 +144,20 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => context.go('/rewards'),
                 ),
               ],
+              const SizedBox(height: AppSpacing.lg),
+              const SectionHeader(
+                title: 'Driver operations',
+                subtitle: 'Smart delivery box transport & handovers',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              HomePreviewCard(
+                icon: Icons.local_shipping_outlined,
+                title: 'Driver & Delivery Portal',
+                message:
+                    'Manage active smart box dispatches, monitor telemetry & log school handovers.',
+                accent: AppColors.brandPrimary,
+                onTap: () => context.push('/driver'),
+              ),
               const SizedBox(height: AppSpacing.lg),
               const SectionHeader(
                 title: 'More from Nayomi’s',

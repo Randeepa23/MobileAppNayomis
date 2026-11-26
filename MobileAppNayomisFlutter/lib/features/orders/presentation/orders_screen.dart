@@ -235,15 +235,31 @@ class _OrderCard extends StatelessWidget {
                   ],
                 ),
                 if (order.boxId != null && order.boxId!.isNotEmpty)
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.sensors, size: 16),
-                    label: const Text('Track Smart Box'),
-                    onPressed: () => context.push('/tracking/${order.id}'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                        onPressed: () => context.push('/driver'),
+                        child: const Text('Driver Mode'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.sensors, size: 16),
+                        label: const Text('Track Smart Box'),
+                        onPressed: () => context.push('/tracking/${order.id}'),
+                      ),
+                    ],
                   )
                 else
                   OutlinedButton.icon(
