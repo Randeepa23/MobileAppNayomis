@@ -14,7 +14,7 @@ class RewardsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final points = ref.watch(authControllerProvider).value?.customer?.points;
+    final customer = ref.watch(authControllerProvider).value?.customer;
     return Scaffold(
       appBar: const BrandedAppBar(title: 'Rewards'),
       body: ResponsiveContent(
@@ -50,7 +50,9 @@ class RewardsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    points == null ? 'Unavailable' : '$points points',
+                    customer == null
+                        ? 'Unavailable'
+                        : '${customer.pointsDisplay} points',
                     style: Theme.of(
                       context,
                     ).textTheme.displayMedium?.copyWith(color: Colors.white),

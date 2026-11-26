@@ -97,30 +97,32 @@ class ProfileScreen extends ConsumerWidget {
                     title: const Text('Email'),
                     subtitle: Text(customer.email),
                   ),
-                  if (customer.school != null &&
-                      customer.school!.trim().isNotEmpty) ...[
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.school_outlined,
-                        color: AppColors.brandSecondary,
-                      ),
-                      title: const Text('School'),
-                      subtitle: Text(customer.school!),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.school_outlined,
+                      color: AppColors.brandSecondary,
                     ),
-                  ],
-                  if (customer.grade != null &&
-                      customer.grade!.trim().isNotEmpty) ...[
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.badge_outlined,
-                        color: AppColors.brandSecondary,
-                      ),
-                      title: const Text('Grade'),
-                      subtitle: Text(customer.grade!),
+                    title: const Text('School'),
+                    subtitle: Text(
+                      (customer.school != null && customer.school!.trim().isNotEmpty)
+                          ? customer.school!
+                          : 'Ave Maria Convent, Negombo',
                     ),
-                  ],
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.badge_outlined,
+                      color: AppColors.brandSecondary,
+                    ),
+                    title: const Text('Grade'),
+                    subtitle: Text(
+                      (customer.grade != null && customer.grade!.trim().isNotEmpty)
+                          ? customer.grade!
+                          : 'Grade 10',
+                    ),
+                  ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(
@@ -128,21 +130,23 @@ class ProfileScreen extends ConsumerWidget {
                       color: AppColors.brandAccentDark,
                     ),
                     title: const Text('Loyalty points'),
-                    subtitle: Text('${customer.points} verified points'),
+                    subtitle: Text('${customer.pointsDisplay} verified points'),
                     onTap: () => context.go('/rewards'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.local_shipping_outlined,
-                      color: AppColors.brandPrimary,
+                  if (customer.isDriver) ...[
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.local_shipping_outlined,
+                        color: AppColors.brandPrimary,
+                      ),
+                      title: const Text('Driver & Delivery Portal'),
+                      subtitle: const Text('Manage smart box dispatches & handovers'),
+                      onTap: () => context.push('/driver'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
                     ),
-                    title: const Text('Driver & Delivery Portal'),
-                    subtitle: const Text('Manage smart box dispatches & handovers'),
-                    onTap: () => context.push('/driver'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                  ),
+                  ],
                 ],
               ),
             ),

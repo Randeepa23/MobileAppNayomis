@@ -11,23 +11,23 @@ const normalizeName = (value) => typeof value === 'string'
   ? value.trim().replace(/\s+/g, ' ').replace(/[\u0000-\u001f\u007f]/g, '')
   : '';
 
-const safeStudent = (student, includeOptional = false) => {
+const safeStudent = (student) => {
   const result = {
     _id: student._id,
     id: student._id,
     name: student.name,
     email: student.email,
-    role: student.role,
-    points: student.points || 0,
-    loyaltyPoints: student.points || 0,
+    role: student.role || 'user',
+    points: typeof student.points === 'number' ? student.points : 0,
+    loyaltyPoints: typeof student.points === 'number' ? student.points : 0,
+    school: student.school || '',
+    grade: student.grade || '',
+    address: student.address || '',
+    whatsapp: student.whatsapp || '',
     orders: student.orders || [],
     createdAt: student.createdAt,
     updatedAt: student.updatedAt,
   };
-  if (includeOptional) {
-    result.school = student.school;
-    result.grade = student.grade;
-  }
   return result;
 };
 

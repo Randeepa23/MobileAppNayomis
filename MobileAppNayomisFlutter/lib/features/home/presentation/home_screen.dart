@@ -133,7 +133,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.sm),
                 HomePreviewCard(
                   icon: Icons.card_giftcard_outlined,
-                  title: '${customer.points} verified points',
+                  title: '${customer.pointsDisplay} verified points',
                   message: 'View your current server-provided loyalty balance.',
                   accent: AppColors.brandAccentDark,
                   onTap: () => context.go('/rewards'),
