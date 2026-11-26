@@ -22,8 +22,10 @@ router.post('/login', async (req, res) => {
       return res.status(500).json({ message: 'Admin credentials not configured' });
     }
 
-    // Check if email matches
-    if (email !== adminEmail) {
+    // Check if email matches (support both full email and 'admin' username)
+    const normalizedInput = (email || '').trim().toLowerCase();
+    const normalizedAdminEmail = adminEmail.trim().toLowerCase();
+    if (normalizedInput !== normalizedAdminEmail && normalizedInput !== 'admin') {
       return res.status(401).json({ message: 'Invalid admin credentials' });
     }
 

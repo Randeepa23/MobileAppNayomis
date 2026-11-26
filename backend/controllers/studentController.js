@@ -86,15 +86,21 @@ const registerStudent = async (req, res) => {
 };
 
 const loginStudent = async (req, res) => {
-  const email = normalizeEmail(req.body.email);
+  const loginInput = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const password = req.body.password;
   const errors = {};
-  if (!EMAIL_PATTERN.test(email)) errors.email = 'Enter a valid email address.';
+  if (!loginInput) errors.email = 'Email or username is required.';
   if (typeof password !== 'string' || !password) errors.password = 'Password is required.';
   if (Object.keys(errors).length) return validationResponse(res, errors);
 
   try {
-    const student = await Student.findOne({ email }).select('+password');
+    // Allow login by email or by student name (case-insensitive username)
+    const student = await Student.findOne({
+      $or: [
+        { email: loginInput },
+        { name: { $regex: new RegExp(`^${loginInput.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') } }
+      ]
+    }).select('+password');
     const valid = student ? await bcrypt.compare(password, student.password) : false;
     if (!valid) {
       return res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
