@@ -105,11 +105,11 @@ const loginStudent = async (req, res) => {
     if (!valid) {
       return res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
     }
-    if (student.role !== 'user') {
+    if (student.role !== 'user' && student.role !== 'driver') {
       return res.status(403).json({ success: false, code: 'CUSTOMER_ACCOUNT_REQUIRED', message: 'Use the appropriate account sign-in.' });
     }
     const token = jwt.sign(
-      { studentId: student._id.toString(), email: student.email, role: 'user' },
+      { studentId: student._id.toString(), email: student.email, role: student.role },
       getJwtSecret(),
       { expiresIn: CUSTOMER_JWT_EXPIRES_IN },
     );

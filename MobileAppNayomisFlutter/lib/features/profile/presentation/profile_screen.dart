@@ -67,12 +67,37 @@ class ProfileScreen extends ConsumerWidget {
                           ).textTheme.titleLarge?.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          customer.email,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Colors.white.withValues(alpha: .86),
+                        Row(
+                          children: [
+                            Text(
+                              customer.email,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: .86),
+                                  ),
+                            ),
+                            if (customer.isDriver) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  'DRIVER',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
@@ -97,43 +122,81 @@ class ProfileScreen extends ConsumerWidget {
                     title: const Text('Email'),
                     subtitle: Text(customer.email),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.school_outlined,
-                      color: AppColors.brandSecondary,
+                  if (customer.isDriver) ...[
+                    const Divider(height: 1),
+                    const ListTile(
+                      leading: Icon(
+                        Icons.badge_outlined,
+                        color: AppColors.brandSecondary,
+                      ),
+                      title: Text('Designation'),
+                      subtitle: Text('Authorized Fleet Delivery Driver'),
                     ),
-                    title: const Text('School'),
-                    subtitle: Text(
-                      (customer.school != null && customer.school!.trim().isNotEmpty)
-                          ? customer.school!
-                          : 'Ave Maria Convent, Negombo',
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.alt_route_rounded,
+                        color: AppColors.brandSecondary,
+                      ),
+                      title: const Text('Assigned Route'),
+                      subtitle: Text(
+                        (customer.school != null && customer.school!.trim().isNotEmpty)
+                            ? customer.school!
+                            : 'Ave Maria Convent & Negombo Route',
+                      ),
                     ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.badge_outlined,
-                      color: AppColors.brandSecondary,
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.sensors_rounded,
+                        color: AppColors.brandPrimary,
+                      ),
+                      title: const Text('Smart Delivery Box Unit'),
+                      subtitle: Text(
+                        (customer.grade != null && customer.grade!.trim().isNotEmpty)
+                            ? customer.grade!
+                            : 'Assigned Unit: BOX-001',
+                      ),
                     ),
-                    title: const Text('Grade'),
-                    subtitle: Text(
-                      (customer.grade != null && customer.grade!.trim().isNotEmpty)
-                          ? customer.grade!
-                          : 'Grade 10',
+                  ] else ...[
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.school_outlined,
+                        color: AppColors.brandSecondary,
+                      ),
+                      title: const Text('School'),
+                      subtitle: Text(
+                        (customer.school != null && customer.school!.trim().isNotEmpty)
+                            ? customer.school!
+                            : 'Ave Maria Convent, Negombo',
+                      ),
                     ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.card_giftcard_outlined,
-                      color: AppColors.brandAccentDark,
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.badge_outlined,
+                        color: AppColors.brandSecondary,
+                      ),
+                      title: const Text('Grade'),
+                      subtitle: Text(
+                        (customer.grade != null && customer.grade!.trim().isNotEmpty)
+                            ? customer.grade!
+                            : 'Grade 10',
+                      ),
                     ),
-                    title: const Text('Loyalty points'),
-                    subtitle: Text('${customer.pointsDisplay} verified points'),
-                    onTap: () => context.go('/rewards'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                  ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.card_giftcard_outlined,
+                        color: AppColors.brandAccentDark,
+                      ),
+                      title: const Text('Loyalty points'),
+                      subtitle: Text('${customer.pointsDisplay} verified points'),
+                      onTap: () => context.go('/rewards'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                    ),
+                  ],
                 ],
               ),
             ),
