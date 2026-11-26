@@ -44,14 +44,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (protected && auth.hasValue && !authenticated) {
         return '/login?from=' + Uri.encodeComponent(state.uri.toString());
       }
-      if (authenticated &&
-          (state.matchedLocation == '/login' ||
-              state.matchedLocation == '/register')) {
-        if (auth.value?.customer?.isDriver == true) {
-          return '/driver';
+      if (authenticated) {
+        final isDriver = auth.value?.customer?.isDriver == true;
+        if (isDriver) {
+          if (state.matchedLocation != '/driver') {
+            return '/driver';
+          }
+          return null;
+        } else {
+          if (state.matchedLocation == '/driver') {
+            return '/home';
+          }
         }
-        final from = state.uri.queryParameters['from'];
-        return from == null || from.isEmpty ? '/home' : from;
+        if (state.matchedLocation == '/login' ||
+            state.matchedLocation == '/register') {
+          final from = state.uri.queryParameters['from'];
+          return from == null || from.isEmpty ? '/home' : from;
+        }
       }
       return null;
     },

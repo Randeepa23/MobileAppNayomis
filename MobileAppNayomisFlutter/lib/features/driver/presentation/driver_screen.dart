@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/app_colors.dart';
+import '../../../features/authentication/application/auth_controller.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../application/driver_providers.dart';
 import '../data/driver_repository.dart';
@@ -14,179 +16,132 @@ class DriverScreen extends ConsumerStatefulWidget {
 }
 
 class _DriverScreenState extends ConsumerState<DriverScreen> {
-  final _incidentController = TextEditingController();
-  String _incidentType = 'temperature_breach';
-
-  @override
-  void dispose() {
-    _incidentController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleDispatch(String orderId) async {
-    try {
-      await ref.read(driverRepositoryProvider).confirmDispatch(orderId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Delivery marked as dispatched (In Transit).')),
-      );
-      ref.invalidate(driverDeliveriesProvider);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-    }
-  }
-
-  Future<void> _handleHandover(String orderId) async {
+  Future<void> _confirmLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Handover'),
-        content: const Text('Have you handed over the breakfast order to the authorized school pickup contact?'),
+        title: const Text('Sign out?'),
+        content: const Text('Are you sure you want to sign out of the Driver Portal?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirm Handover'),
+            child: const Text('Sign out'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        await ref.read(driverRepositoryProvider).completeHandover(orderId);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Delivery successfully recorded as completed.')),
-        );
-        ref.invalidate(driverDeliveriesProvider);
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
+    if (confirmed == true && mounted) {
+      await ref.read(authControllerProvider.notifier).logout();
+      if (mounted) context.go('/login');
     }
   }
 
-  Future<void> _handleStatusUpdate(String orderId, String newStatus) async {
+  Future<void> _handleStatusUpdate(String orderId, String newStatus, String label) async {
     try {
       await ref.read(driverRepositoryProvider).updateStatus(orderId, newStatus);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delivery status updated to ${newStatus.toUpperCase()} in Atlas.')),
+        SnackBar(
+          content: Text('Delivery status updated to $label in MongoDB Atlas.'),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 2),
+        ),
       );
       ref.invalidate(driverDeliveriesProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update status: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     }
   }
 
-  void _showStatusDialog(String orderId, String currentStatus) {
-    String selected = currentStatus;
-    showDialog(
+  void _showChangeStatusSheet(String orderId, String currentStatus) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Update Delivery Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Select delivery progress state to update in MongoDB Atlas:'),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: ['ready', 'dispatched', 'delivered', 'cancelled'].contains(selected) ? selected : 'ready',
-                decoration: const InputDecoration(labelText: 'Delivery Status', border: OutlineInputBorder()),
-                items: const [
-                  DropdownMenuItem(value: 'ready', child: Text('Ready for Dispatch')),
-                  DropdownMenuItem(value: 'dispatched', child: Text('Dispatched (In Transit)')),
-                  DropdownMenuItem(value: 'delivered', child: Text('Delivered (Handover Complete)')),
-                  DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
-                ],
-                onChanged: (val) {
-                  if (val != null) setDialogState(() => selected = val);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-              onPressed: () {
-                Navigator.pop(ctx);
-                _handleStatusUpdate(orderId, selected);
-              },
-              child: const Text('Update in Atlas'),
-            ),
-          ],
-        ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
-  }
-
-  void _showIncidentDialog(String orderId) {
-    final messenger = ScaffoldMessenger.of(context);
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Report Delivery Incident'),
-          content: Column(
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              DropdownButtonFormField<String>(
-                initialValue: _incidentType,
-                decoration: const InputDecoration(labelText: 'Incident Type'),
-                items: const [
-                  DropdownMenuItem(value: 'temperature_breach', child: Text('Temperature Breach')),
-                  DropdownMenuItem(value: 'gas_anomaly', child: Text('Gas / Odor Warning')),
-                  DropdownMenuItem(value: 'unusual_motion', child: Text('Impact / Spillage Risk')),
-                  DropdownMenuItem(value: 'tampering', child: Text('Container Lid Opened')),
-                  DropdownMenuItem(value: 'delivery_delay', child: Text('Traffic Delay')),
-                  DropdownMenuItem(value: 'other', child: Text('Other Issue')),
-                ],
-                onChanged: (val) {
-                  if (val != null) setDialogState(() => _incidentType = val);
+              Text(
+                'Change Delivery Status',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Updates the order status immediately in MongoDB Atlas',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.black54,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              _StatusOptionTile(
+                icon: Icons.access_time_rounded,
+                iconColor: Colors.amber.shade800,
+                title: 'Ready for Dispatch',
+                subtitle: 'Food packaged and loaded in smart box',
+                isSelected: currentStatus == 'ready',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleStatusUpdate(orderId, 'ready', 'READY');
                 },
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _incidentController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Description / Notes',
-                  border: OutlineInputBorder(),
-                ),
+              const Divider(height: 1),
+              _StatusOptionTile(
+                icon: Icons.local_shipping_rounded,
+                iconColor: Colors.blue.shade700,
+                title: 'Dispatched (In Transit)',
+                subtitle: 'Van en route to delivery destination',
+                isSelected: currentStatus == 'dispatched',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleStatusUpdate(orderId, 'dispatched', 'DISPATCHED');
+                },
+              ),
+              const Divider(height: 1),
+              _StatusOptionTile(
+                icon: Icons.check_circle_rounded,
+                iconColor: Colors.green.shade700,
+                title: 'Delivered (Handover Complete)',
+                subtitle: 'Order safely handed over to school recipient',
+                isSelected: currentStatus == 'delivered',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleStatusUpdate(orderId, 'delivered', 'DELIVERED');
+                },
+              ),
+              const Divider(height: 1),
+              _StatusOptionTile(
+                icon: Icons.cancel_outlined,
+                iconColor: Colors.red.shade700,
+                title: 'Cancelled',
+                subtitle: 'Delivery cannot be completed',
+                isSelected: currentStatus == 'cancelled',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleStatusUpdate(orderId, 'cancelled', 'CANCELLED');
+                },
               ),
             ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
-              onPressed: () async {
-                Navigator.pop(ctx);
-                try {
-                  await ref.read(driverRepositoryProvider).reportIncident(
-                    orderId,
-                    _incidentType,
-                    _incidentController.text,
-                  );
-                  _incidentController.clear();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Incident report logged to backend.')),
-                  );
-                  ref.invalidate(driverDeliveriesProvider);
-                } catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text(e.toString())));
-                }
-              },
-              child: const Text('Submit Report'),
-            ),
-          ],
         ),
       ),
     );
@@ -194,59 +149,124 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final customer = ref.watch(authControllerProvider).value?.customer;
     final deliveriesAsync = ref.watch(driverDeliveriesProvider);
 
     return Scaffold(
-      appBar: const BrandedAppBar(title: 'Driver Operations'),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text(
+          'Driver Delivery Portal',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+        actions: [
+          IconButton(
+            tooltip: 'Sign out',
+            icon: const Icon(Icons.logout_rounded, color: Colors.red),
+            onPressed: _confirmLogout,
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(driverDeliveriesProvider.future),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Hotspot status card
-            Card(
-              color: const Color(0xFFF0FDF4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.green.shade300),
+            // Driver Information Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.amber.shade700,
+                    child: const Icon(
+                      Icons.local_shipping_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.wifi_tethering, color: Colors.green, size: 22),
-                        SizedBox(width: 8),
-                        Text('Driver Hotspot Gateway', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(
+                          customer?.name.isNotEmpty == true
+                              ? customer!.name
+                              : 'Sunimal Perera',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Vehicle: ${customer?.vehicleNumber ?? "WP NB-4521"}  •  Box: ${customer?.assignedBox ?? "BOX-001"}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Ensure Personal Hotspot is turned ON on this phone so the ESP32 monitoring unit can transmit telemetry directly to the backend API.',
-                      style: TextStyle(fontSize: 12, color: Colors.black87),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            const Text('Assigned Deliveries', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 20),
+
+            // Section Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Assigned Deliveries',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => ref.refresh(driverDeliveriesProvider),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Refresh'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
 
             deliveriesAsync.when(
               loading: () => const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                padding: EdgeInsets.all(40),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
               ),
               error: (err, _) => Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 child: Center(
                   child: Column(
                     children: [
-                      Text(err.toString(), textAlign: TextAlign.center),
-                      const SizedBox(height: 8),
+                      Text(
+                        err.toString(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                      const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () => ref.refresh(driverDeliveriesProvider),
                         child: const Text('Retry'),
@@ -257,20 +277,29 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
               ),
               data: (deliveries) {
                 if (deliveries.isEmpty) {
-                  return const EmptyState(
-                    title: 'No Assigned Deliveries',
-                    message: 'There are currently no active deliveries assigned for transport.',
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: EmptyState(
+                      title: 'No Deliveries Assigned',
+                      message: 'There are currently no active deliveries assigned to your vehicle.',
+                    ),
                   );
                 }
 
                 return Column(
-                  children: deliveries.map((d) => _DriverDeliveryCard(
-                    delivery: d,
-                    onDispatch: () => _handleDispatch(d.orderId),
-                    onHandover: () => _handleHandover(d.orderId),
-                    onUpdateStatus: () => _showStatusDialog(d.orderId, d.status),
-                    onReportIncident: () => _showIncidentDialog(d.orderId),
-                  )).toList(),
+                  children: deliveries.map((d) {
+                    return _DeliveryStatusCard(
+                      delivery: d,
+                      onQuickProgress: () {
+                        if (d.status == 'ready') {
+                          _handleStatusUpdate(d.orderId, 'dispatched', 'DISPATCHED');
+                        } else if (d.status == 'dispatched') {
+                          _handleStatusUpdate(d.orderId, 'delivered', 'DELIVERED');
+                        }
+                      },
+                      onChangeStatus: () => _showChangeStatusSheet(d.orderId, d.status),
+                    );
+                  }).toList(),
                 );
               },
             ),
@@ -281,61 +310,157 @@ class _DriverScreenState extends ConsumerState<DriverScreen> {
   }
 }
 
-class _DriverDeliveryCard extends StatelessWidget {
-  const _DriverDeliveryCard({
-    required this.delivery,
-    required this.onDispatch,
-    required this.onHandover,
-    required this.onUpdateStatus,
-    required this.onReportIncident,
+class _StatusOptionTile extends StatelessWidget {
+  const _StatusOptionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
   });
 
-  final DriverDelivery delivery;
-  final VoidCallback onDispatch;
-  final VoidCallback onHandover;
-  final VoidCallback onUpdateStatus;
-  final VoidCallback onReportIncident;
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: iconColor.withValues(alpha: 0.15),
+        child: Icon(icon, color: iconColor),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+          color: isSelected ? iconColor : Colors.black87,
+        ),
+      ),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: iconColor)
+          : const Icon(Icons.chevron_right, color: Colors.black26),
+      onTap: onTap,
+    );
+  }
+}
+
+class _DeliveryStatusCard extends StatelessWidget {
+  const _DeliveryStatusCard({
+    required this.delivery,
+    required this.onQuickProgress,
+    required this.onChangeStatus,
+  });
+
+  final DriverDelivery delivery;
+  final VoidCallback onQuickProgress;
+  final VoidCallback onChangeStatus;
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'dispatched':
+        return Colors.blue.shade700;
+      case 'delivered':
+        return Colors.green.shade700;
+      case 'cancelled':
+        return Colors.red.shade700;
+      case 'ready':
+      default:
+        return Colors.amber.shade800;
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'dispatched':
+        return 'IN TRANSIT';
+      case 'delivered':
+        return 'DELIVERED';
+      case 'cancelled':
+        return 'CANCELLED';
+      case 'ready':
+      default:
+        return 'READY FOR DISPATCH';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor(delivery.status);
+    final statusLabel = _statusLabel(delivery.status);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      elevation: 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Order Number & Status Badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(delivery.orderNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Chip(
-                  label: Text(delivery.status.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                  backgroundColor: delivery.status == 'dispatched' ? Colors.blue.shade100 : Colors.orange.shade100,
-                  side: BorderSide.none,
+                Text(
+                  delivery.orderNumber,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
                 ),
-              ],
-            ),
-            const Divider(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.school, size: 16, color: Colors.black54),
-                const SizedBox(width: 6),
-                Expanded(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                  ),
                   child: Text(
-                    '${delivery.recipientName} · ${delivery.school}',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    statusLabel,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const Divider(height: 20),
+
+            // Recipient & School
             Row(
               children: [
-                const Icon(Icons.place, size: 16, color: Colors.black54),
-                const SizedBox(width: 6),
+                const Icon(Icons.school_outlined, size: 18, color: Colors.black54),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${delivery.recipientName}  •  ${delivery.school}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Pickup location & time
+            Row(
+              children: [
+                const Icon(Icons.place_outlined, size: 18, color: Colors.black54),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '${delivery.pickupLocation} (${delivery.pickupTime})',
@@ -344,17 +469,29 @@ class _DriverDeliveryCard extends StatelessWidget {
                 ),
               ],
             ),
+
             if (delivery.items.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(
-                'Items: ${delivery.items.join(', ')}',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.fastfood_outlined, size: 18, color: Colors.black54),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      delivery.items.join(', '),
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ),
+                ],
               ),
             ],
-            const Divider(height: 16),
-            // Hardware box section
+
+            const SizedBox(height: 12),
+
+            // Smart Box Monitoring Bar
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
@@ -364,60 +501,142 @@ class _DriverDeliveryCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.sensors, size: 18, color: AppColors.primary),
+                      const Icon(Icons.sensors, size: 16, color: AppColors.primary),
                       const SizedBox(width: 6),
-                      Text('Box: ${delivery.boxId ?? "Unassigned"}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ],
-                  ),
-                  Row(
-                    children: [
                       Text(
-                        delivery.temperature != null ? '${delivery.temperature!.toStringAsFixed(1)} °C' : 'No Temp',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        delivery.batteryPercent != null ? '${delivery.batteryPercent!.toInt()}%' : '',
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        'Box: ${delivery.boxId ?? "BOX-001"}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ],
                   ),
+                  if (delivery.temperature != null)
+                    Text(
+                      '${delivery.temperature!.toStringAsFixed(1)} °C',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+
+            // Status Modification Action Buttons
             Row(
               children: [
-                if (delivery.status != 'dispatched')
+                // Quick progression button (Start Transit / Handover Complete)
+                if (delivery.status == 'ready')
                   Expanded(
+                    flex: 3,
                     child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                      icon: const Icon(Icons.local_shipping, size: 16),
-                      label: const Text('Start Transit'),
-                      onPressed: onDispatch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.local_shipping, size: 18),
+                      label: const Text(
+                        'Start Transit',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: onQuickProgress,
+                    ),
+                  )
+                else if (delivery.status == 'dispatched')
+                  Expanded(
+                    flex: 3,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text(
+                        'Handover Complete',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: onQuickProgress,
+                    ),
+                  )
+                else if (delivery.status == 'delivered')
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle, size: 18, color: Colors.green.shade700),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Delivery Completed',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 else
                   Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                      icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text('Handover Complete'),
-                      onPressed: onHandover,
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cancel, size: 18, color: Colors.red.shade700),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Order Cancelled',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
-                  icon: const Icon(Icons.edit_note_rounded, size: 18),
-                  label: const Text('Status'),
-                  onPressed: onUpdateStatus,
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red.shade700),
-                  onPressed: onReportIncident,
-                  child: const Text('Incident'),
+
+                const SizedBox(width: 10),
+
+                // Change status button (Dropdown / Sheet to set any status in Atlas)
+                Expanded(
+                  flex: 2,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: Colors.grey.shade400),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: const Icon(Icons.edit_note_rounded, size: 18),
+                    label: const Text(
+                      'Change',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: onChangeStatus,
+                  ),
                 ),
               ],
             ),
@@ -427,4 +646,3 @@ class _DriverDeliveryCard extends StatelessWidget {
     );
   }
 }
-
