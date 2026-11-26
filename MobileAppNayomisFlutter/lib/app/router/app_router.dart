@@ -9,7 +9,6 @@ import '../../features/authentication/presentation/register_screen.dart';
 import '../../features/cart/presentation/cart_screen.dart';
 import '../../features/checkout/presentation/checkout_screen.dart';
 import '../../features/contact/presentation/contact_screen.dart';
-import '../../features/driver/presentation/driver_screen.dart';
 import '../../features/food_details/presentation/food_details_screen.dart';
 import '../../features/gallery/presentation/gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -44,23 +43,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (protected && auth.hasValue && !authenticated) {
         return '/login?from=' + Uri.encodeComponent(state.uri.toString());
       }
-      if (authenticated) {
-        final isDriver = auth.value?.customer?.isDriver == true;
-        if (isDriver) {
-          if (state.matchedLocation != '/driver') {
-            return '/driver';
-          }
-          return null;
-        } else {
-          if (state.matchedLocation == '/driver') {
-            return '/home';
-          }
-        }
-        if (state.matchedLocation == '/login' ||
-            state.matchedLocation == '/register') {
-          final from = state.uri.queryParameters['from'];
-          return from == null || from.isEmpty ? '/home' : from;
-        }
+      if (authenticated &&
+          (state.matchedLocation == '/login' ||
+              state.matchedLocation == '/register')) {
+        final from = state.uri.queryParameters['from'];
+        return from == null || from.isEmpty ? '/home' : from;
       }
       return null;
     },
@@ -121,7 +108,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
       GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
-      GoRoute(path: '/driver', builder: (_, __) => const DriverScreen()),
       GoRoute(
         path: '/tracking/:id',
         builder: (_, state) =>

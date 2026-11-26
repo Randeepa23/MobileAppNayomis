@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/app_colors.dart';
 import '../../core/design_system/app_icons.dart';
-import '../../features/authentication/application/auth_controller.dart';
-import '../../features/driver/presentation/driver_screen.dart';
 
 class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
@@ -13,11 +11,6 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final customer = ref.watch(authControllerProvider).value?.customer;
-    if (customer?.isDriver == true) {
-      return const DriverScreen();
-    }
-
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: DecoratedBox(

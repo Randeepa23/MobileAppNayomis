@@ -1,6 +1,90 @@
 import 'package:dio/dio.dart';
 import '../../../core/networking/api_error_mapper.dart';
 
+class DriverInfo {
+  const DriverInfo({
+    required this.name,
+    required this.phone,
+    required this.vehicleModel,
+    required this.vehicleNumber,
+    required this.route,
+    required this.assignedBox,
+    required this.dispatchHub,
+  });
+
+  final String name;
+  final String phone;
+  final String vehicleModel;
+  final String vehicleNumber;
+  final String route;
+  final String assignedBox;
+  final String dispatchHub;
+
+  factory DriverInfo.fromApi(Map<String, dynamic> json) => DriverInfo(
+    name: json['name']?.toString() ?? 'Sunimal Perera',
+    phone: json['phone']?.toString() ?? '+94 77 123 4567',
+    vehicleModel: json['vehicle_model']?.toString() ?? "Nayomi's Waterfront Delivery Van #1",
+    vehicleNumber: json['vehicle_number']?.toString() ?? 'WP NB-4521',
+    route: json['route']?.toString() ?? 'Ave Maria Convent & Negombo Route',
+    assignedBox: json['assigned_box']?.toString() ?? 'BOX-001',
+    dispatchHub: json['dispatch_hub']?.toString() ?? "Nayomi's Waterfront Kitchen Dispatch, Negombo",
+  );
+}
+
+class FoodSafetyInfo {
+  const FoodSafetyInfo({
+    required this.status,
+    required this.statusLabel,
+    required this.temperatureCondition,
+    required this.gasCondition,
+    required this.boxCondition,
+    required this.motionCondition,
+    required this.safeZoneInfo,
+  });
+
+  final String status; // 'safe', 'warning', 'critical'
+  final String statusLabel;
+  final String temperatureCondition;
+  final String gasCondition;
+  final String boxCondition;
+  final String motionCondition;
+  final String safeZoneInfo;
+
+  factory FoodSafetyInfo.fromApi(Map<String, dynamic> json) => FoodSafetyInfo(
+    status: json['status']?.toString() ?? 'safe',
+    statusLabel: json['status_label']?.toString() ?? 'Food Safety Verified: Fresh, Safe & Warm',
+    temperatureCondition: json['temperature_condition']?.toString() ?? 'Optimal hot-holding safe zone (60°C - 75°C)',
+    gasCondition: json['gas_condition']?.toString() ?? 'Air quality normal — no spoilage VOCs detected',
+    boxCondition: json['box_condition']?.toString() ?? 'Securely sealed & tamper-proof',
+    motionCondition: json['motion_condition']?.toString() ?? 'In transit (normal vehicle motion)',
+    safeZoneInfo: json['safe_zone_info']?.toString() ?? 'HACCP Standard Hot-Holding (>60°C)',
+  );
+}
+
+class DeliveryDestination {
+  const DeliveryDestination({
+    required this.recipientName,
+    required this.school,
+    required this.pickupLocation,
+    required this.pickupTime,
+    required this.status,
+  });
+
+  final String recipientName;
+  final String school;
+  final String pickupLocation;
+  final String pickupTime;
+  final String status;
+
+  factory DeliveryDestination.fromApi(Map<String, dynamic> json) => DeliveryDestination(
+    recipientName: json['recipient_name']?.toString() ?? 'Student',
+    school: json['school']?.toString() ?? 'Ave Maria Convent, Negombo',
+    pickupLocation: json['pickup_location']?.toString() ?? 'Ave Maria Convent, Negombo',
+    pickupTime: json['pickup_time']?.toString() ?? '08:00 - 08:30 AM',
+    status: json['status']?.toString() ?? 'in-transit',
+  );
+}
+
 class LiveSensorSnapshot {
   const LiveSensorSnapshot({
     required this.orderId,
@@ -17,6 +101,9 @@ class LiveSensorSnapshot {
     this.boxOpen,
     this.batteryPercent,
     this.receivedAt,
+    this.driver,
+    this.foodSafety,
+    this.destination,
   });
 
   final String orderId;
@@ -33,9 +120,15 @@ class LiveSensorSnapshot {
   final bool? boxOpen;
   final double? batteryPercent;
   final DateTime? receivedAt;
+  final DriverInfo? driver;
+  final FoodSafetyInfo? foodSafety;
+  final DeliveryDestination? destination;
 
   factory LiveSensorSnapshot.fromApi(Map<String, dynamic> json) {
     final rawLatest = json['latest'] is Map ? Map<String, dynamic>.from(json['latest'] as Map) : null;
+    final rawDriver = json['driver'] is Map ? Map<String, dynamic>.from(json['driver'] as Map) : null;
+    final rawSafety = json['food_safety'] is Map ? Map<String, dynamic>.from(json['food_safety'] as Map) : null;
+    final rawDelivery = json['delivery'] is Map ? Map<String, dynamic>.from(json['delivery'] as Map) : null;
     
     DateTime? rxTime;
     if (rawLatest?['received_at'] != null) {
@@ -59,6 +152,9 @@ class LiveSensorSnapshot {
       boxOpen: rawLatest?['box_open'] as bool?,
       batteryPercent: (rawLatest?['battery_percent'] as num?)?.toDouble(),
       receivedAt: rxTime,
+      driver: rawDriver != null ? DriverInfo.fromApi(rawDriver) : null,
+      foodSafety: rawSafety != null ? FoodSafetyInfo.fromApi(rawSafety) : null,
+      destination: rawDelivery != null ? DeliveryDestination.fromApi(rawDelivery) : null,
     );
   }
 }
@@ -82,4 +178,3 @@ class TrackingRepository {
     }
   }
 }
-

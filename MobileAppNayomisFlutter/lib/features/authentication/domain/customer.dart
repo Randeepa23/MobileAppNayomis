@@ -8,13 +8,6 @@ class Customer {
     this.school,
     this.grade,
     this.phone,
-    this.licenseNumber,
-    this.vehicleModel,
-    this.vehicleNumber,
-    this.assignedBox,
-    this.assignedRoute,
-    this.dispatchHub,
-    this.dutyStatus,
   });
 
   final String id;
@@ -25,15 +18,7 @@ class Customer {
   final String? school;
   final String? grade;
   final String? phone;
-  final String? licenseNumber;
-  final String? vehicleModel;
-  final String? vehicleNumber;
-  final String? assignedBox;
-  final String? assignedRoute;
-  final String? dispatchHub;
-  final String? dutyStatus;
 
-  bool get isDriver => role == 'driver';
   bool get isAdmin => role == 'admin';
 
   String get pointsDisplay =>
@@ -51,12 +36,5 @@ class Customer {
     school: json['school']?.toString(),
     grade: json['grade']?.toString(),
     phone: json['phone']?.toString() ?? json['whatsapp']?.toString(),
-    licenseNumber: json['licenseNumber']?.toString(),
-    vehicleModel: json['vehicleModel']?.toString(),
-    vehicleNumber: json['vehicleNumber']?.toString(),
-    assignedBox: json['assignedBox']?.toString(),
-    assignedRoute: json['assignedRoute']?.toString(),
-    dispatchHub: json['dispatchHub']?.toString(),
-    dutyStatus: json['dutyStatus']?.toString(),
   );
 }

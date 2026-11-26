@@ -252,6 +252,32 @@ export interface LatestSensorReadingResponse {
   assignment_status: 'unassigned' | 'waiting_for_data' | 'ready';
   device_status: SensorDeviceStatus;
   latest: SensorReading | null;
+  driver?: {
+    name: string;
+    phone: string;
+    vehicle_model: string;
+    vehicle_number: string;
+    route: string;
+    assigned_box: string;
+    dispatch_hub?: string;
+  } | null;
+  delivery?: {
+    recipient_name: string;
+    school: string;
+    pickup_location: string;
+    pickup_time: string;
+    delivery_date?: string | null;
+    status: string;
+  } | null;
+  food_safety?: {
+    status: 'safe' | 'warning' | 'critical';
+    status_label: string;
+    temperature_condition: string;
+    gas_condition: string;
+    box_condition: string;
+    motion_condition: string;
+    safe_zone_info: string;
+  } | null;
   server_time: string;
 }
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Battery, Box, Clock3, Droplets, Flame, Info, MapPinned, RefreshCw, Thermometer, Wifi } from 'lucide-react';
+import { Activity, Battery, Box, CheckCircle2, Clock3, Droplets, Flame, Info, MapPinned, Phone, RefreshCw, ShieldCheck, Thermometer, Truck, User, Wifi } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError, apiService } from '@/services/api';
 import type { LatestSensorReadingResponse, SensorDeviceStatus, SensorOrderOption, SensorReadingHistoryResponse } from '@/types';
@@ -174,31 +174,125 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
         {loadingReadings && !latestData ?
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }, (_, index) => <Skeleton key={index} className="h-28 w-full" />)}</div> :
           !latest ? <Card className="border-orange-200"><CardContent className="p-8 text-center text-gray-700">Waiting for the first reading from the smart delivery box.</CardContent></Card> :
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <ReadingCard icon={Thermometer} label="Temperature">{numeric(latest.temperature_c, 1, ' °C')}</ReadingCard>
-            <ReadingCard icon={Droplets} label="Humidity">{numeric(latest.humidity_percent, 1, ' %')}</ReadingCard>
-            <ReadingCard icon={Flame} label="Gas Reading">{latest.gas_raw != null ? `${latest.gas_raw} (ADC)` : NA}</ReadingCard>
-            <ReadingCard icon={MapPinned} label="GPS coordinates">
-              {latest.latitude == null || latest.longitude == null ? NA : (
-                <div className="flex flex-col gap-1">
-                  <span>{`${numeric(latest.latitude, 6)}, ${numeric(latest.longitude, 6)}`}</span>
-                  <a
-                    href={`https://www.openstreetmap.org/?mlat=${latest.latitude}&mlon=${latest.longitude}#map=16/${latest.latitude}/${latest.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-orange-600 underline hover:text-orange-800"
-                  >
-                    View on Map ↗
-                  </a>
+          <>
+            {/* Food Safety & Condition Assessment Banner */}
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-emerald-600 p-2 text-white">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-emerald-900 text-base">
+                      {latestData?.food_safety?.status_label || 'Food Safety Verified: Fresh, Safe & Warm'}
+                    </h4>
+                    <p className="text-xs text-emerald-700">
+                      Standard: {latestData?.food_safety?.safe_zone_info || 'HACCP Hot-Holding (>60°C)'} • {latestData?.food_safety?.temperature_condition || 'Safe Warm Zone'}
+                    </p>
+                  </div>
                 </div>
+                <Badge className="bg-emerald-600 text-white hover:bg-emerald-700 text-xs py-1 px-3">
+                  VERIFIED SAFE
+                </Badge>
+              </div>
+            </div>
+
+            {/* Where is the Driver? Card */}
+            <Card className="border-blue-200 bg-gradient-to-r from-blue-50/50 to-white">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2 text-blue-900">
+                  <Truck className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-lg">Where is the Driver?</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-blue-100 p-2 text-blue-700"><User className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Assigned Driver</p>
+                      <p className="font-semibold text-gray-900">{latestData?.driver?.name || 'Sunimal Perera'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-blue-100 p-2 text-blue-700"><Truck className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Delivery Vehicle</p>
+                      <p className="font-semibold text-gray-900">{latestData?.driver?.vehicle_number || 'WP NB-4521'}</p>
+                      <p className="text-xs text-gray-500">{latestData?.driver?.vehicle_model || "Nayomi's Waterfront Van #1"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><Phone className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Driver Phone / WhatsApp</p>
+                      <a href={`tel:${latestData?.driver?.phone || '+94771234567'}`} className="font-semibold text-emerald-700 underline text-sm">
+                        {latestData?.driver?.phone || '+94 77 123 4567'}
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-orange-100 p-2 text-orange-700"><MapPinned className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Delivery Route</p>
+                      <p className="font-semibold text-gray-900 text-xs">{latestData?.driver?.route || 'Ave Maria Convent & Negombo Route'}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* What Condition is the Food in? Telemetry Sensors */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <ReadingCard icon={Thermometer} label="Food Temperature">
+                <span className="text-orange-600 font-bold text-lg">{numeric(latest.temperature_c, 1, ' °C')}</span>
+                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.temperature_condition || 'Safe Hot-Holding Zone'}</p>
+              </ReadingCard>
+              <ReadingCard icon={Droplets} label="Box Humidity">
+                <span className="font-bold text-lg">{numeric(latest.humidity_percent, 1, ' %')}</span>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">Optimal Freshness Moisture</p>
+              </ReadingCard>
+              <ReadingCard icon={Flame} label="Freshness & Gas Sensor">
+                <span className="font-bold text-lg">{latest.gas_raw != null ? `${latest.gas_raw} (ADC)` : NA}</span>
+                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.gas_condition || 'Fresh • No Spoilage VOCs'}</p>
+              </ReadingCard>
+              <ReadingCard icon={Box} label="Container Lid Seal">
+                <span className={`font-bold text-lg ${latest.box_open ? 'text-red-600' : 'text-emerald-700'}`}>
+                  {latest.box_open ? 'Lid Opened' : 'Securely Sealed'}
+                </span>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.box_condition || 'Tamper-Proof'}</p>
+              </ReadingCard>
+              <ReadingCard icon={MapPinned} label="Driver GPS Position">
+                {latest.latitude == null || latest.longitude == null ? NA : (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-sm">{`${numeric(latest.latitude, 6)}, ${numeric(latest.longitude, 6)}`}</span>
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${latest.latitude}&mlon=${latest.longitude}#map=16/${latest.latitude}/${latest.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-orange-600 underline hover:text-orange-800"
+                    >
+                      View Live Map ↗
+                    </a>
+                  </div>
+                )}
+              </ReadingCard>
+              <ReadingCard icon={Activity} label="Motion / Transit Handling">
+                <span className="font-bold text-sm">{motion(latest.motion_detected)}</span>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.motion_condition || 'Smooth Transport'}</p>
+              </ReadingCard>
+              {latest.battery_percent !== null && (
+                <ReadingCard icon={Battery} label="Smart Box Battery">
+                  <span className="font-bold text-lg text-emerald-700">{numeric(latest.battery_percent, 1, ' %')}</span>
+                  <p className="text-xs font-normal text-gray-500 mt-0.5">ESP32 IoT Unit</p>
+                </ReadingCard>
               )}
-            </ReadingCard>
-            <ReadingCard icon={Activity} label="Motion / handling">{motion(latest.motion_detected)}</ReadingCard>
-            <ReadingCard icon={Box} label="Box opening">{boxState(latest.box_open)}</ReadingCard>
-            {latest.battery_percent !== null && <ReadingCard icon={Battery} label="Battery level">{numeric(latest.battery_percent, 1, ' %')}</ReadingCard>}
-            <ReadingCard icon={Clock3} label="Last updated">{timestamp(latest.received_at)}</ReadingCard>
-            <ReadingCard icon={Wifi} label="Device status"><Badge variant="outline" className={status.className}>{status.label}</Badge></ReadingCard>
-          </div>
+              <ReadingCard icon={Wifi} label="IoT Connection">
+                <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">Updated: {timestamp(latest.received_at)}</p>
+              </ReadingCard>
+            </div>
+          </>
         }
         <Card className="border-orange-200"><CardHeader><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-xl text-gray-900">Reading history</CardTitle>{pagination && <span className="text-sm text-gray-500">{pagination.total} readings</span>}

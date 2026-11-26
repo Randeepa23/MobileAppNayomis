@@ -52,12 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .login(_email.text, _password.text);
     _password.clear();
     if (success && mounted) {
-      final customer = ref.read(authControllerProvider).value?.customer;
-      if (customer?.isDriver == true) {
-        context.go('/driver');
-      } else {
-        context.go(widget.intendedRoute ?? '/home');
-      }
+      context.go(widget.intendedRoute ?? '/home');
     }
   }
 

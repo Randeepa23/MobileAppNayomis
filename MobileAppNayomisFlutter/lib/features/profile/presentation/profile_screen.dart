@@ -10,7 +10,6 @@ import '../../../core/design_system/widgets/responsive_content.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../authentication/application/auth_controller.dart';
 import '../../authentication/domain/customer.dart';
-import '../../driver/presentation/driver_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -20,15 +19,11 @@ class ProfileScreen extends ConsumerWidget {
     final customer = ref.watch(authControllerProvider).value?.customer;
     if (customer == null) return const LoadingState(label: 'Loading profile');
 
-    // If logged in as driver, show the dedicated Driver Delivery Portal
-    if (customer.isDriver) {
-      return const DriverScreen();
-    }
     return _StudentProfileView(customer: customer);
   }
 }
 
-/// Dedicated Student / Customer Profile — strictly customer features only
+/// Dedicated Customer Profile
 class _StudentProfileView extends ConsumerWidget {
   const _StudentProfileView({required this.customer});
   final Customer customer;
@@ -39,7 +34,7 @@ class _StudentProfileView extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Sign out?'),
         content: const Text(
-          'You will need to sign in again to place orders and view loyalty points.',
+          'You will need to sign in again to place breakfast orders and view loyalty points.',
         ),
         actions: [
           TextButton(
@@ -97,6 +92,7 @@ class _StudentProfileView extends ConsumerWidget {
                       initials.isEmpty ? '?' : initials,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.brandSecondary,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -110,7 +106,10 @@ class _StudentProfileView extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleLarge
-                              ?.copyWith(color: Colors.white),
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(

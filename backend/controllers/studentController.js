@@ -118,38 +118,6 @@ const loginStudent = async (req, res) => {
   if (Object.keys(errors).length) return validationResponse(res, errors);
 
   try {
-    // 1. Check if login credentials match a Driver in the dedicated Driver collection
-    const driver = await Driver.findOne({
-      $or: [
-        { email: loginInput },
-        { name: { $regex: new RegExp(`^${loginInput.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') } }
-      ]
-    }).select('+password');
-
-    if (driver) {
-      const valid = await bcrypt.compare(password, driver.password);
-      if (!valid) {
-        return res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
-      }
-      const token = jwt.sign(
-        {
-          studentId: driver._id.toString(),
-          driverId: driver._id.toString(),
-          id: driver._id.toString(),
-          email: driver.email,
-          role: 'driver',
-        },
-        getJwtSecret(),
-        { expiresIn: CUSTOMER_JWT_EXPIRES_IN },
-      );
-      return res.json({
-        success: true,
-        message: 'Driver login successful',
-        data: { token, student: safeDriver(driver) },
-      });
-    }
-
-    // 2. Otherwise check Student collection
     const student = await Student.findOne({
       $or: [
         { email: loginInput },
