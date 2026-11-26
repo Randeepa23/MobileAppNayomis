@@ -132,7 +132,13 @@ const loginStudent = async (req, res) => {
         return res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
       }
       const token = jwt.sign(
-        { driverId: driver._id.toString(), email: driver.email, role: 'driver' },
+        {
+          studentId: driver._id.toString(),
+          driverId: driver._id.toString(),
+          id: driver._id.toString(),
+          email: driver.email,
+          role: 'driver',
+        },
         getJwtSecret(),
         { expiresIn: CUSTOMER_JWT_EXPIRES_IN },
       );

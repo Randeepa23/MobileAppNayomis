@@ -42,7 +42,11 @@ class SessionStorage {
 
   Future<void> writeToken(String token) async {
     final payload = _parseJwtPayload(token);
-    final customerId = payload['studentId']?.toString();
+    final customerId = (payload['studentId'] ??
+            payload['driverId'] ??
+            payload['id'] ??
+            payload['sub'])
+        ?.toString();
     final expirySeconds = payload['exp'];
     if (customerId == null || customerId.isEmpty || expirySeconds is! num) {
       throw const FormatException('Malformed customer session.');

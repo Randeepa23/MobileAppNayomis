@@ -47,6 +47,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (authenticated &&
           (state.matchedLocation == '/login' ||
               state.matchedLocation == '/register')) {
+        if (auth.value?.customer?.isDriver == true) {
+          return '/driver';
+        }
         final from = state.uri.queryParameters['from'];
         return from == null || from.isEmpty ? '/home' : from;
       }
