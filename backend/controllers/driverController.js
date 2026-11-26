@@ -192,10 +192,53 @@ const reportIncident = async (req, res) => {
   }
 };
 
+const getDriverProfile = async (req, res) => {
+  try {
+    const driverId = req.driver?.driverId;
+    let driverData = null;
+    let box = null;
+
+    if (driverId) {
+      driverData = await Student.findById(driverId).select('-password').lean();
+      box = await DeliveryBox.findOne({ driver: driverId }).lean();
+    }
+    if (!box) {
+      box = await DeliveryBox.findOne({ boxId: 'BOX-001' }).lean();
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        driver: {
+          id: String(driverData?._id || 'drv-01'),
+          name: driverData?.name || req.driver?.name || 'Sunimal Perera',
+          email: driverData?.email || req.driver?.email || 'driver@nayomis.com',
+          phone: driverData?.whatsapp || '+94 77 123 4567',
+          role: 'driver',
+          route: driverData?.school || 'Ave Maria Convent & Negombo Distribution Route',
+          assignedUnit: driverData?.grade || 'Assigned Unit: BOX-001',
+          dispatchHub: driverData?.address || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
+          box: box ? {
+            boxId: box.boxId,
+            status: box.status,
+            temperature: box.temperature?.current,
+            batteryPercent: box.batteryLevel,
+            location: box.location?.coordinates,
+          } : null,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Failed to get driver profile:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load driver profile.' });
+  }
+};
+
 module.exports = {
   getDriverDeliveries,
   confirmDispatch,
   completeHandover,
   reportIncident,
+  getDriverProfile,
 };
 
