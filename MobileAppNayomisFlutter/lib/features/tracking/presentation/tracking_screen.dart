@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/app_colors.dart';
 import '../../../shared/widgets/app_widgets.dart';
@@ -246,18 +245,6 @@ class TrackingScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.local_shipping_outlined),
-                    label: const Text('Driver & Operations Perspective'),
-                    onPressed: () => context.push('/driver'),
                   ),
                 ),
               ],

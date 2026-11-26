@@ -17,9 +17,10 @@ const authenticateCustomer = (req, res, next) => {
   }
   try {
     const payload = jwt.verify(token, getJwtSecret());
-    if (!payload.studentId || payload.role !== 'user' || payload.type === 'admin') {
+    if ((!payload.studentId && !payload.driverId) || (payload.role !== 'user' && payload.role !== 'driver') || payload.type === 'admin') {
       return res.status(403).json({ success: false, code: 'CUSTOMER_TOKEN_REQUIRED', message: 'Customer access required' });
     }
+    payload.studentId = payload.studentId || payload.driverId;
     req.customer = payload;
     return next();
   } catch (error) {

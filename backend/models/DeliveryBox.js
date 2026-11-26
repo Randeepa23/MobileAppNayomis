@@ -38,7 +38,7 @@ const deliveryBoxSchema = new mongoose.Schema({
   },
   driver: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Student',
+    ref: 'Driver',
     default: null
   },
   lastReading: {

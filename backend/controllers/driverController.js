@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const Driver = require('../models/Driver');
 const Student = require('../models/Student');
 const PickupPoint = require('../models/PickupPoint');
 const FoodItem = require('../models/FoodItem');
@@ -199,8 +200,11 @@ const getDriverProfile = async (req, res) => {
     let box = null;
 
     if (driverId) {
-      driverData = await Student.findById(driverId).select('-password').lean();
+      driverData = await Driver.findById(driverId).select('-password').lean();
       box = await DeliveryBox.findOne({ driver: driverId }).lean();
+    }
+    if (!driverData) {
+      driverData = await Driver.findOne({ email: 'driver@nayomis.com' }).select('-password').lean();
     }
     if (!box) {
       box = await DeliveryBox.findOne({ boxId: 'BOX-001' }).lean();
@@ -211,13 +215,17 @@ const getDriverProfile = async (req, res) => {
       data: {
         driver: {
           id: String(driverData?._id || 'drv-01'),
-          name: driverData?.name || req.driver?.name || 'Sunimal Perera',
-          email: driverData?.email || req.driver?.email || 'driver@nayomis.com',
-          phone: driverData?.whatsapp || '+94 77 123 4567',
+          name: driverData?.name || 'Sunimal Perera',
+          email: driverData?.email || 'driver@nayomis.com',
+          phone: driverData?.phone || driverData?.whatsapp || '+94 77 123 4567',
           role: 'driver',
-          route: driverData?.school || 'Ave Maria Convent & Negombo Distribution Route',
-          assignedUnit: driverData?.grade || 'Assigned Unit: BOX-001',
-          dispatchHub: driverData?.address || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
+          licenseNumber: driverData?.licenseNumber || 'B-8492011',
+          vehicleModel: driverData?.vehicleModel || "Nayomi's Waterfront Delivery Van #1",
+          vehicleNumber: driverData?.vehicleNumber || 'WP NB-4521',
+          route: driverData?.assignedRoute || 'Ave Maria Convent & Negombo Distribution Route',
+          assignedUnit: driverData?.assignedBox || 'BOX-001',
+          dispatchHub: driverData?.dispatchHub || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
+          dutyStatus: driverData?.dutyStatus || 'available',
           box: box ? {
             boxId: box.boxId,
             status: box.status,

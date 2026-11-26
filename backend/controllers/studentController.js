@@ -1,4 +1,5 @@
 const Student = require('../models/Student');
+const Driver = require('../models/Driver');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../middleware/customerAuth');
@@ -17,7 +18,7 @@ const safeStudent = (student) => {
     id: student._id,
     name: student.name,
     email: student.email,
-    role: student.role || 'user',
+    role: 'user',
     points: typeof student.points === 'number' ? student.points : 0,
     loyaltyPoints: typeof student.points === 'number' ? student.points : 0,
     school: student.school || '',
@@ -29,6 +30,29 @@ const safeStudent = (student) => {
     updatedAt: student.updatedAt,
   };
   return result;
+};
+
+const safeDriver = (driver) => {
+  return {
+    _id: driver._id,
+    id: driver._id,
+    name: driver.name,
+    email: driver.email,
+    role: 'driver',
+    phone: driver.phone || driver.whatsapp || '+94 77 123 4567',
+    whatsapp: driver.whatsapp || driver.phone || '+94 77 123 4567',
+    licenseNumber: driver.licenseNumber || 'B-8492011',
+    vehicleModel: driver.vehicleModel || "Nayomi's Waterfront Delivery Van #1",
+    vehicleNumber: driver.vehicleNumber || 'WP NB-4521',
+    assignedBox: driver.assignedBox || 'BOX-001',
+    assignedRoute: driver.assignedRoute || 'Ave Maria Convent & Negombo Distribution Route',
+    dispatchHub: driver.dispatchHub || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
+    dutyStatus: driver.dutyStatus || 'available',
+    points: 0,
+    loyaltyPoints: 0,
+    createdAt: driver.createdAt,
+    updatedAt: driver.updatedAt,
+  };
 };
 
 const validationResponse = (res, errors) => res.status(400).json({
@@ -94,7 +118,32 @@ const loginStudent = async (req, res) => {
   if (Object.keys(errors).length) return validationResponse(res, errors);
 
   try {
-    // Allow login by email or by student name (case-insensitive username)
+    // 1. Check if login credentials match a Driver in the dedicated Driver collection
+    const driver = await Driver.findOne({
+      $or: [
+        { email: loginInput },
+        { name: { $regex: new RegExp(`^${loginInput.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') } }
+      ]
+    }).select('+password');
+
+    if (driver) {
+      const valid = await bcrypt.compare(password, driver.password);
+      if (!valid) {
+        return res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
+      }
+      const token = jwt.sign(
+        { driverId: driver._id.toString(), email: driver.email, role: 'driver' },
+        getJwtSecret(),
+        { expiresIn: CUSTOMER_JWT_EXPIRES_IN },
+      );
+      return res.json({
+        success: true,
+        message: 'Driver login successful',
+        data: { token, student: safeDriver(driver) },
+      });
+    }
+
+    // 2. Otherwise check Student collection
     const student = await Student.findOne({
       $or: [
         { email: loginInput },
@@ -105,11 +154,8 @@ const loginStudent = async (req, res) => {
     if (!valid) {
       return res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
     }
-    if (student.role !== 'user' && student.role !== 'driver') {
-      return res.status(403).json({ success: false, code: 'CUSTOMER_ACCOUNT_REQUIRED', message: 'Use the appropriate account sign-in.' });
-    }
     const token = jwt.sign(
-      { studentId: student._id.toString(), email: student.email, role: student.role },
+      { studentId: student._id.toString(), email: student.email, role: 'user' },
       getJwtSecret(),
       { expiresIn: CUSTOMER_JWT_EXPIRES_IN },
     );
@@ -124,20 +170,31 @@ const loginStudent = async (req, res) => {
   }
 };
 
-const findAndReturnStudent = async (id, res, nested = true) => {
+const findAndReturnStudent = async (id, res, role = 'user', nested = true) => {
   try {
+    if (role === 'driver') {
+      const driver = await Driver.findById(id);
+      if (driver) {
+        const data = safeDriver(driver);
+        return res.json({ success: true, data: nested ? { student: data } : data });
+      }
+    }
     const student = await Student.findById(id);
     if (!student) {
-      return res.status(404).json({ success: false, code: 'CUSTOMER_NOT_FOUND', message: 'Student not found' });
+      return res.status(404).json({ success: false, code: 'CUSTOMER_NOT_FOUND', message: 'User not found' });
     }
-    const data = safeStudent(student, true);
+    const data = safeStudent(student);
     return res.json({ success: true, data: nested ? { student: data } : data });
   } catch (error) {
-    return res.status(404).json({ success: false, code: 'CUSTOMER_NOT_FOUND', message: 'Student not found' });
+    return res.status(404).json({ success: false, code: 'CUSTOMER_NOT_FOUND', message: 'User not found' });
   }
 };
 
-const getCurrentStudent = (req, res) => findAndReturnStudent(req.customer.studentId, res);
+const getCurrentStudent = (req, res) => {
+  const role = req.customer.role || 'user';
+  const id = req.customer.driverId || req.customer.studentId;
+  return findAndReturnStudent(id, res, role);
+};
 
 const getStudentById = (req, res) => {
   if (String(req.customer.studentId) !== String(req.params.id)) {

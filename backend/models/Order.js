@@ -65,7 +65,7 @@ const orderSchema = new mongoose.Schema({
   // IoT & Delivery Tracking
   delivery: {
     boxId: String,
-    driver: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+    driver: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver' },
     driverName: String,
     driverPhone: String,
     assignedAt: Date,

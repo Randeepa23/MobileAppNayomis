@@ -51,7 +51,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .read(authControllerProvider.notifier)
         .login(_email.text, _password.text);
     _password.clear();
-    if (success && mounted) context.go(widget.intendedRoute ?? '/home');
+    if (success && mounted) {
+      final customer = ref.read(authControllerProvider).value?.customer;
+      if (customer?.isDriver == true) {
+        context.go('/driver');
+      } else {
+        context.go(widget.intendedRoute ?? '/home');
+      }
+    }
   }
 
   @override

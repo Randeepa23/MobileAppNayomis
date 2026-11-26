@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('./customerAuth');
+const Driver = require('../models/Driver');
 const Student = require('../models/Student');
 
 const requireDriver = async (req, res, next) => {
@@ -12,28 +13,46 @@ const requireDriver = async (req, res, next) => {
     const token = authorization.slice('Bearer '.length).trim();
     const payload = jwt.verify(token, getJwtSecret());
 
-    // Allow admin or driver role
+    // Allow admin dispatcher
     if (payload.type === 'admin') {
       req.driver = { kind: 'admin', email: payload.email, name: 'Admin Dispatcher' };
       return next();
     }
 
-    if (payload.studentId) {
-      const student = await Student.findById(payload.studentId);
-      if (!student || (student.role !== 'driver' && student.role !== 'admin' && student.role !== 'user')) {
-        return res.status(403).json({ success: false, message: 'Driver privileges required.' });
+    const driverId = payload.driverId || payload.studentId;
+    if (driverId) {
+      // 1. Check dedicated Driver collection
+      const driver = await Driver.findById(driverId);
+      if (driver && driver.accountStatus === 'active') {
+        req.driver = {
+          kind: 'driver',
+          driverId: driver._id,
+          name: driver.name,
+          email: driver.email,
+          phone: driver.whatsapp || driver.phone,
+          vehicleModel: driver.vehicleModel,
+          vehicleNumber: driver.vehicleNumber,
+          assignedBox: driver.assignedBox,
+          assignedRoute: driver.assignedRoute,
+        };
+        return next();
       }
-      req.driver = {
-        kind: 'driver',
-        driverId: student._id,
-        name: student.name,
-        email: student.email,
-        phone: student.whatsapp,
-      };
-      return next();
+
+      // 2. Fallback check for admin
+      const student = await Student.findById(driverId);
+      if (student && (student.role === 'admin' || student.role === 'user')) {
+        req.driver = {
+          kind: 'driver',
+          driverId: student._id,
+          name: student.name,
+          email: student.email,
+          phone: student.whatsapp,
+        };
+        return next();
+      }
     }
 
-    return res.status(403).json({ success: false, message: 'Invalid driver token.' });
+    return res.status(403).json({ success: false, message: 'Driver privileges required.' });
   } catch (error) {
     return res.status(401).json({ success: false, message: 'Invalid or expired session.' });
   }
