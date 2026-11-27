@@ -39,18 +39,6 @@ class TrackingScreen extends ConsumerWidget {
     } catch (_) {}
   }
 
-  Future<void> _makeCall(String phone) async {
-    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
-    final callUri = Uri.parse('tel:$cleanPhone');
-    try {
-      await launchUrl(callUri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      try {
-        await launchUrl(callUri);
-      } catch (_) {}
-    }
-  }
-
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'dispatched':
@@ -141,7 +129,6 @@ class TrackingScreen extends ConsumerWidget {
           ),
         ),
         data: (snapshot) {
-          final driver = snapshot.driver;
           final destination = snapshot.destination;
           final statusColor = _statusColor(snapshot.deliveryStatus);
           final statusLabel = _statusLabel(snapshot.deliveryStatus);
@@ -221,7 +208,7 @@ class TrackingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // SECTION 1: WHERE IS YOUR DELIVERY? (DRIVER & LIVE LOCATION)
+                // SECTION 1: LIVE DELIVERY LOCATION & GOOGLE MAPS
                 Card(
                   elevation: 1,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -232,110 +219,48 @@ class TrackingScreen extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: Colors.blue.shade50,
-                              child: const Icon(Icons.person, color: Colors.blue, size: 24),
-                            ),
-                            const SizedBox(width: 12),
+                            const Icon(Icons.location_on, size: 20, color: Colors.red),
+                            const SizedBox(width: 8),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    driver?.name ?? 'Sunimal Perera',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Vehicle: ${driver?.vehicleNumber ?? "WP NB-4521"}',
-                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                  ),
-                                ],
+                              child: Text(
+                                snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            InkWell(
-                              onTap: () => _makeCall(driver?.phone ?? '+94 77 123 4567'),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.shade200),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.phone, size: 14, color: Colors.green),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      driver?.phone ?? '+94 77 123 4567',
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
-                                    ),
-                                  ],
-                                ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.blue.shade100),
+                              ),
+                              child: Text(
+                                'Box #${snapshot.deviceId ?? "BOX-001"}',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
                               ),
                             ),
                           ],
                         ),
-                        const Divider(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.location_on, size: 18, color: Colors.red),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      'Box #${snapshot.deviceId ?? "BOX-001"}',
-                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
-                                  icon: const Icon(Icons.map_rounded, size: 18),
-                                  label: const Text(
-                                    'Open Live Location in Google Maps',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue.shade700,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    elevation: 1,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
+                            icon: const Icon(Icons.map_rounded, size: 18),
+                            label: const Text(
+                              'Open Live Location in Google Maps',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade700,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 1,
+                            ),
                           ),
                         ),
                       ],
