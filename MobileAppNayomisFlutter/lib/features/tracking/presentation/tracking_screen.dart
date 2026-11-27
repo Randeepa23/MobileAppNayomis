@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design_system/app_colors.dart';
@@ -204,18 +203,7 @@ class TrackingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // SECTION 1: WHERE IS THE DRIVER?
-                const Row(
-                  children: [
-                    Icon(Icons.directions_car_filled_rounded, color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Where is the Driver?',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                // SECTION 1: WHERE IS YOUR DELIVERY? (DRIVER & LIVE LOCATION)
                 Card(
                   elevation: 1,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -227,9 +215,9 @@ class TrackingScreen extends ConsumerWidget {
                         Row(
                           children: [
                             CircleAvatar(
-                              radius: 24,
+                              radius: 22,
                               backgroundColor: Colors.blue.shade50,
-                              child: const Icon(Icons.person, color: Colors.blue, size: 26),
+                              child: const Icon(Icons.person, color: Colors.blue, size: 24),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -238,11 +226,11 @@ class TrackingScreen extends ConsumerWidget {
                                 children: [
                                   Text(
                                     driver?.name ?? 'Sunimal Perera',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Delivery Vehicle: ${driver?.vehicleNumber ?? "WP NB-4521"}',
+                                    'Vehicle: ${driver?.vehicleNumber ?? "WP NB-4521"}',
                                     style: const TextStyle(fontSize: 12, color: Colors.black54),
                                   ),
                                 ],
@@ -273,72 +261,48 @@ class TrackingScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        const Divider(height: 24),
-                        Row(
-                          children: [
-                            const Icon(Icons.alt_route_rounded, size: 18, color: AppColors.primary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Assigned Distribution Route', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                  Text(
-                                    driver?.route ?? 'Ave Maria Convent & Negombo Route',
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
+                        const Divider(height: 20),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on, size: 18, color: Colors.red),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                  if (snapshot.latitude != null && snapshot.longitude != null)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.shade100,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text('LIVE GPS', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green)),
+                                  const Icon(Icons.location_on, size: 18, color: Colors.red),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                     ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Box #${snapshot.deviceId ?? "BOX-001"}',
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                                    ),
+                                  ),
                                 ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                snapshot.boxLocation?.description ?? 'Current Van Position: Approaching school via Negombo Waterfront corridor.',
-                                style: const TextStyle(fontSize: 11, color: Colors.black87),
                               ),
                               const SizedBox(height: 12),
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
                                   onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
-                                  icon: const Icon(Icons.navigation_rounded, size: 18),
+                                  icon: const Icon(Icons.map_rounded, size: 18),
                                   label: const Text(
-                                    'Track Driver Live on Google Maps',
+                                    'Open Live Location in Google Maps',
                                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                   ),
                                   style: ElevatedButton.styleFrom(
@@ -359,310 +323,78 @@ class TrackingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // SMART DELIVERY BOX SITUATED LOCATION CARD
-                Card(
-                  elevation: 1.5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                // SECTION 2: FOOD CONDITION (CLEAN & SIMPLE)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.inventory_2_rounded, size: 20, color: AppColors.primary),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Smart Delivery Box Location',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.green.shade300),
-                              ),
-                              child: Text(
-                                snapshot.boxLocation?.status ?? 'In Transit',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.place_rounded, size: 20, color: Colors.red),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Delivery Box Currently Situated At:',
-                                          style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w500),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent, Negombo',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          snapshot.boxLocation?.description ?? 'Inside Delivery Van along Negombo Coastal Corridor',
-                                          style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          snapshot.boxLocation?.area ?? 'Negombo, Western Province, Sri Lanka',
-                                          style: const TextStyle(fontSize: 11, color: Colors.black45),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.satellite_alt_rounded, size: 16, color: Colors.blueGrey),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        snapshot.latitude != null && snapshot.longitude != null
-                                            ? 'GPS: ${snapshot.latitude!.toStringAsFixed(6)}°, ${snapshot.longitude!.toStringAsFixed(6)}°'
-                                            : '7.211500° N, 79.839800° E',
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blueGrey),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      'Box #${snapshot.deviceId ?? snapshot.boxLocation?.boxId ?? "BOX-001"}',
-                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
-                                  icon: const Icon(Icons.near_me_rounded, size: 18, color: AppColors.primary),
-                                  label: const Text(
-                                    'View Delivery Box on Google Maps',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppColors.primary, width: 1.5),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        Icon(Icons.health_and_safety_rounded, color: Colors.green, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Food Condition',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // SECTION 2: WHAT CONDITION IS IN THE FOOD?
-                const Row(
-                  children: [
-                    Icon(Icons.health_and_safety_rounded, color: Colors.green, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'What Condition is the Food In?',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Text(
+                        safety?.statusLabel ?? 'Fresh & Warm',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
 
-                // Food Safety Overall Verified Banner
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.green.shade700,
-                        child: const Icon(Icons.verified, color: Colors.white, size: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              safety?.statusLabel ?? 'Food Safety Verified: Fresh, Safe & Warm',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: Colors.green.shade900,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Standard: ${safety?.safeZoneInfo ?? "HACCP Hot-Holding (>60°C)"}',
-                              style: TextStyle(fontSize: 11, color: Colors.green.shade800),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Sensor Condition Grid
+                // 4 Essential Condition Tiles
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 1.35,
+                  childAspectRatio: 1.45,
                   children: [
-                    // Temperature Tile
                     _ConditionCard(
                       icon: Icons.thermostat_rounded,
                       iconColor: Colors.deepOrange,
-                      title: 'Internal Temp',
-                      value: snapshot.temperatureC != null ? '${snapshot.temperatureC!.toStringAsFixed(1)} °C' : '63.0 °C',
-                      statusText: safety?.temperatureCondition ?? 'Safe Hot-Holding Zone',
+                      title: 'Food Temperature',
+                      value: snapshot.temperatureC != null ? '${snapshot.temperatureC!.toStringAsFixed(1)} °C' : '63.5 °C',
+                      statusText: 'Warm & Fresh',
                       statusColor: Colors.green.shade800,
                     ),
-                    // Humidity Tile
                     _ConditionCard(
-                      icon: Icons.water_drop_rounded,
-                      iconColor: Colors.blue,
-                      title: 'Humidity Level',
-                      value: snapshot.humidityPercent != null ? '${snapshot.humidityPercent!.toStringAsFixed(0)} %' : '52 %',
-                      statusText: 'Optimal Moisture Balance',
-                      statusColor: Colors.blue.shade800,
-                    ),
-                    // Gas / Spoilage Sensor Tile
-                    _ConditionCard(
-                      icon: Icons.air_rounded,
+                      icon: Icons.verified_rounded,
                       iconColor: Colors.teal,
                       title: 'Food Freshness',
-                      value: snapshot.gasRaw != null ? '${snapshot.gasRaw!.toInt()} ADC' : 'Fresh (Normal)',
-                      statusText: 'No Spoilage VOCs Detected',
+                      value: '100% Fresh',
+                      statusText: 'Safe Quality',
                       statusColor: Colors.teal.shade800,
                     ),
-                    // Tamper / Lid Seal Tile
                     _ConditionCard(
                       icon: snapshot.boxOpen == true ? Icons.lock_open_rounded : Icons.lock_rounded,
                       iconColor: snapshot.boxOpen == true ? Colors.red : Colors.green,
                       title: 'Container Seal',
                       value: snapshot.boxOpen == true ? 'OPENED' : 'Sealed',
-                      statusText: safety?.boxCondition ?? 'Tamper-Proof & Sealed',
+                      statusText: snapshot.boxOpen == true ? 'Alert' : 'Tamper-Proof',
                       statusColor: snapshot.boxOpen == true ? Colors.red : Colors.green.shade800,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Smart Box & Telemetry Details
-                Card(
-                  elevation: 0.5,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.sensors, size: 18, color: AppColors.primary),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Smart Delivery Box: ${snapshot.deviceId ?? "BOX-001"}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.battery_charging_full, size: 18, color: Colors.green),
-                            const SizedBox(width: 4),
-                            Text(
-                              snapshot.batteryPercent != null ? '${snapshot.batteryPercent!.toInt()}%' : '94%',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                            if (snapshot.receivedAt != null) ...[
-                              const SizedBox(width: 10),
-                              Text(
-                                DateFormat('HH:mm:ss').format(snapshot.receivedAt!.toLocal()),
-                                style: const TextStyle(fontSize: 11, color: Colors.black45),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
+                    _ConditionCard(
+                      icon: Icons.directions_bus_rounded,
+                      iconColor: Colors.blue,
+                      title: 'Transport',
+                      value: snapshot.motionDetected == true ? 'In Transit' : 'Stationary',
+                      statusText: 'Smooth Motion',
+                      statusColor: Colors.blue.shade800,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Bottom Explanation Note
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.info_outline, size: 18, color: Colors.amber),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Nayomi's Waterfront Smart Box continuously transmits real-time temperature, freshness gas, and tamper sensor readings to verify your child's breakfast is 100% fresh, hygienic, and hot.",
-                          style: TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ],
             ),

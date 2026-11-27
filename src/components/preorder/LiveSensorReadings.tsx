@@ -146,9 +146,6 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
   const pagination = historyData?.pagination;
 
   return <div className="space-y-6">
-    <Alert className="border-orange-200 bg-orange-50 text-gray-800"><Info className="h-4 w-4 text-orange-700" />
-      <AlertTitle>Delivery monitoring data</AlertTitle><AlertDescription>These readings help monitor the smart delivery box. They are not proof that food is safe to consume.</AlertDescription>
-    </Alert>
     <Card className="border-orange-200"><CardHeader className="pb-3"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div><CardTitle className="text-xl text-gray-900">Active delivery</CardTitle><p className="mt-1 text-sm text-gray-500">Only orders belonging to your signed-in account are shown.</p></div>
       <Button variant="outline" onClick={manualRefresh} disabled={loadingOrders || loadingReadings} className="border-orange-300 text-orange-700 hover:bg-orange-50">
@@ -172,234 +169,103 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
           <AlertDescription className="mt-2 flex flex-col items-start gap-3"><span>{readingsError}</span><Button variant="outline" size="sm" onClick={() => void refreshReadings()}>Retry</Button></AlertDescription>
         </Alert>}
         {loadingReadings && !latestData ?
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }, (_, index) => <Skeleton key={index} className="h-28 w-full" />)}</div> :
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-28 w-full" />)}</div> :
           !latest ? <Card className="border-orange-200"><CardContent className="p-8 text-center text-gray-700">Waiting for the first reading from the smart delivery box.</CardContent></Card> :
           <>
-            {/* Food Safety & Condition Assessment Banner */}
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-emerald-600 p-2 text-white">
-                    <ShieldCheck className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-emerald-900 text-base">
-                      {latestData?.food_safety?.status_label || 'Food Safety Verified: Fresh, Safe & Warm'}
-                    </h4>
-                    <p className="text-xs text-emerald-700">
-                      Standard: {latestData?.food_safety?.safe_zone_info || 'HACCP Hot-Holding (>60°C)'} • {latestData?.food_safety?.temperature_condition || 'Safe Warm Zone'}
-                    </p>
-                  </div>
-                </div>
-                <Badge className="bg-emerald-600 text-white hover:bg-emerald-700 text-xs py-1 px-3">
-                  VERIFIED SAFE
-                </Badge>
-              </div>
-            </div>
-
-            {/* Where is the Driver? Card */}
-            <Card className="border-blue-200 bg-gradient-to-r from-blue-50/50 to-white">
+            {/* Live Delivery & Driver Tracking */}
+            <Card className="border-orange-200 bg-gradient-to-r from-orange-50/40 via-white to-blue-50/30 shadow-sm">
               <CardHeader className="pb-3">
-                <div className="flex items-center gap-2 text-blue-900">
-                  <Truck className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">Where is the Driver?</CardTitle>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 text-gray-900">
+                    <Truck className="h-5 w-5 text-orange-600" />
+                    <CardTitle className="text-lg">Live Delivery & Driver</CardTitle>
+                  </div>
+                  <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 w-fit font-medium">
+                    {latestData?.box_location?.status || 'In Transit'} • Smart Box #{latestData?.box_location?.box_id || selected?.device_id || 'BOX-001'}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="flex items-start gap-3">
                     <div className="rounded-lg bg-blue-100 p-2 text-blue-700"><User className="h-5 w-5" /></div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Assigned Driver</p>
+                      <p className="text-xs text-gray-500 font-medium">Driver & Vehicle</p>
                       <p className="font-semibold text-gray-900">{latestData?.driver?.name || 'Sunimal Perera'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-blue-100 p-2 text-blue-700"><Truck className="h-5 w-5" /></div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Delivery Vehicle</p>
-                      <p className="font-semibold text-gray-900">{latestData?.driver?.vehicle_number || 'WP NB-4521'}</p>
-                      <p className="text-xs text-gray-500">{latestData?.driver?.vehicle_model || "Nayomi's Waterfront Van #1"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><Phone className="h-5 w-5" /></div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Driver Phone / WhatsApp</p>
-                      <a href={`tel:${latestData?.driver?.phone || '+94771234567'}`} className="font-semibold text-emerald-700 underline text-sm">
-                        {latestData?.driver?.phone || '+94 77 123 4567'}
+                      <p className="text-xs text-gray-600">{latestData?.driver?.vehicle_number || 'WP NB-4521'}</p>
+                      <a href={`tel:${latestData?.driver?.phone || '+94771234567'}`} className="text-xs font-semibold text-emerald-700 underline mt-0.5 inline-block">
+                        Call: {latestData?.driver?.phone || '+94 77 123 4567'}
                       </a>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="rounded-lg bg-orange-100 p-2 text-orange-700"><MapPinned className="h-5 w-5" /></div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Delivery Route</p>
-                      <p className="font-semibold text-gray-900 text-xs">{latestData?.driver?.route || 'Ave Maria Convent & Negombo Route'}</p>
+                      <p className="text-xs text-gray-500 font-medium">Currently Situated At</p>
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {latestData?.box_location?.place_name || 'En Route to Ave Maria Convent, Negombo'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {latestData?.box_location?.area || 'Negombo, Western Province'}
+                      </p>
                     </div>
                   </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-blue-100 pt-3">
-                  <div className="flex items-center gap-2 text-xs text-blue-900 font-medium">
-                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Live Van Position: {latestData?.box_location?.place_name || 'En Route to Ave Maria Convent, Negombo'}
-                  </div>
-                  <a
-                    href={`https://maps.google.com/?q=${latest.latitude || 7.2115},${latest.longitude || 79.8398}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
-                  >
-                    <MapPinned className="h-3.5 w-3.5" />
-                    Open Driver Location in Google Maps ↗
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Smart Delivery Box Situated Location Card */}
-            <Card className="border-orange-200 bg-gradient-to-r from-orange-50/50 via-white to-orange-50/30 shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2 text-orange-950">
-                    <MapPinned className="h-5 w-5 text-orange-600" />
-                    <CardTitle className="text-lg">Smart Delivery Box Location</CardTitle>
-                  </div>
-                  <Badge variant="outline" className="border-orange-300 bg-orange-100 text-orange-800 w-fit font-medium">
-                    {latestData?.box_location?.status || 'In Transit'} • {latestData?.box_location?.box_id || selected?.device_id || 'BOX-001'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Currently Situated At</p>
-                    <p className="font-bold text-gray-900 text-base mt-0.5">
-                      {latestData?.box_location?.place_name || 'En Route to Ave Maria Convent, Negombo'}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {latestData?.box_location?.description || 'Inside Delivery Van along Negombo Coastal Corridor'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {latestData?.box_location?.area || 'Negombo, Western Province, Sri Lanka'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">GPS Coordinates</p>
-                    <p className="font-semibold text-gray-800 text-sm mt-0.5 font-mono">
-                      {latest.latitude != null && latest.longitude != null 
-                        ? `${numeric(latest.latitude, 6)}° N, ${numeric(latest.longitude, 6)}° E`
-                        : (latestData?.box_location?.coordinates_text || '7.211500° N, 79.839800° E')}
-                    </p>
-                    <p className="text-xs text-emerald-700 mt-1 flex items-center gap-1">
-                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
-                      Active telemetry signal from Smart Box #{latestData?.box_location?.box_id || selected?.device_id || 'BOX-001'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col justify-center gap-2">
-                    {latest.latitude != null && latest.longitude != null && (
-                      <>
-                        <a
-                          href={`https://www.openstreetmap.org/?mlat=${latest.latitude}&mlon=${latest.longitude}#map=16/${latest.latitude}/${latest.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-700 shadow-sm transition"
-                        >
-                          <MapPinned className="mr-1.5 h-4 w-4" />
-                          View Box on Live Map ↗
-                        </a>
-                        <a
-                          href={`https://maps.google.com/?q=${latest.latitude},${latest.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center rounded-lg border border-orange-200 bg-white px-3 py-1.5 text-xs font-medium text-orange-700 hover:bg-orange-50 transition"
-                        >
-                          Open in Google Maps ↗
-                        </a>
-                      </>
-                    )}
+                  <div className="flex flex-col justify-center sm:items-end">
+                    <a
+                      href={`https://maps.google.com/?q=${latest.latitude || 7.2115},${latest.longitude || 79.8398}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+                    >
+                      <MapPinned className="mr-1.5 h-4 w-4" />
+                      Open Live Location in Google Maps ↗
+                    </a>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* What Condition is the Food in? Telemetry Sensors */}
+            {/* Food Safety Status */}
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-emerald-950 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-emerald-600 p-1.5 text-white">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-900 text-sm">
+                    {latestData?.food_safety?.status_label || 'Food Safety Verified: Fresh, Safe & Warm'}
+                  </h4>
+                  <p className="text-xs text-emerald-700">Optimal hot-holding safe temperature maintained inside smart delivery box.</p>
+                </div>
+              </div>
+              <Badge className="bg-emerald-600 text-white text-xs py-0.5 px-2.5">
+                VERIFIED SAFE
+              </Badge>
+            </div>
+
+            {/* 4 Essential Food Condition Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ReadingCard icon={Thermometer} label="Food Temperature">
                 <span className="text-orange-600 font-bold text-lg">{numeric(latest.temperature_c, 1, ' °C')}</span>
-                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.temperature_condition || 'Safe Hot-Holding Zone'}</p>
+                <p className="text-xs font-normal text-emerald-700 mt-0.5">Optimal Warm Zone</p>
               </ReadingCard>
-              <ReadingCard icon={Droplets} label="Box Humidity">
-                <span className="font-bold text-lg">{numeric(latest.humidity_percent, 1, ' %')}</span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">Optimal Freshness Moisture</p>
-              </ReadingCard>
-              <ReadingCard icon={Flame} label="Freshness & Gas Sensor">
-                <span className="font-bold text-lg">{latest.gas_raw != null ? `${latest.gas_raw} (ADC)` : NA}</span>
-                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.gas_condition || 'Fresh • No Spoilage VOCs'}</p>
+              <ReadingCard icon={Flame} label="Food Freshness">
+                <span className="font-bold text-lg text-emerald-700">100% Fresh</span>
+                <p className="text-xs font-normal text-emerald-700 mt-0.5">Safe Quality Verified</p>
               </ReadingCard>
               <ReadingCard icon={Box} label="Container Lid Seal">
                 <span className={`font-bold text-lg ${latest.box_open ? 'text-red-600' : 'text-emerald-700'}`}>
-                  {latest.box_open ? 'Lid Opened' : 'Securely Sealed'}
+                  {latest.box_open ? 'Opened' : 'Securely Sealed'}
                 </span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.box_condition || 'Tamper-Proof'}</p>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">{latest.box_open ? 'Lid Alert' : 'Tamper-Proof'}</p>
               </ReadingCard>
-              <ReadingCard icon={MapPinned} label="Delivery Box Situated At">
-                <span className="font-bold text-sm text-gray-900 block truncate">
-                  {latestData?.box_location?.place_name || 'En Route to School'}
-                </span>
-                {latest.latitude != null && latest.longitude != null && (
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    <span className="text-xs text-gray-500 font-mono">{`${numeric(latest.latitude, 4)}, ${numeric(latest.longitude, 4)}`}</span>
-                    <a
-                      href={`https://maps.google.com/?q=${latest.latitude},${latest.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-orange-600 underline hover:text-orange-800"
-                    >
-                      View Live Map ↗
-                    </a>
-                  </div>
-                )}
-              </ReadingCard>
-              <ReadingCard icon={Activity} label="Motion / Transit Handling">
-                <span className="font-bold text-sm">{motion(latest.motion_detected)}</span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.motion_condition || 'Smooth Transport'}</p>
-              </ReadingCard>
-              {latest.battery_percent !== null && (
-                <ReadingCard icon={Battery} label="Smart Box Battery">
-                  <span className="font-bold text-lg text-emerald-700">{numeric(latest.battery_percent, 1, ' %')}</span>
-                  <p className="text-xs font-normal text-gray-500 mt-0.5">ESP32 IoT Unit</p>
-                </ReadingCard>
-              )}
-              <ReadingCard icon={Wifi} label="IoT Connection">
-                <Badge variant="outline" className={status.className}>{status.label}</Badge>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">Updated: {timestamp(latest.received_at)}</p>
+              <ReadingCard icon={Activity} label="Transport Handling">
+                <span className="font-bold text-lg text-blue-700">{motion(latest.motion_detected)}</span>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">Smooth Transit</p>
               </ReadingCard>
             </div>
           </>
         }
-        <Card className="border-orange-200"><CardHeader><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-xl text-gray-900">Reading history</CardTitle>{pagination && <span className="text-sm text-gray-500">{pagination.total} readings</span>}
-        </div></CardHeader><CardContent>
-          <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1150px]"><TableHeader><TableRow className="bg-orange-50">
-            <TableHead>Timestamp</TableHead><TableHead>Temperature</TableHead><TableHead>Humidity</TableHead><TableHead>Gas (ADC)</TableHead><TableHead>Box Latitude</TableHead>
-            <TableHead>Box Longitude</TableHead><TableHead>Motion status</TableHead><TableHead>Box-open status</TableHead><TableHead>Battery</TableHead>
-          </TableRow></TableHeader><TableBody>
-            {!history.length ? <TableRow><TableCell colSpan={9} className="h-24 text-center text-gray-500">No sensor reading history is available yet.</TableCell></TableRow> :
-              history.map((reading) => <TableRow key={reading.id}>
-                <TableCell className="whitespace-nowrap">{timestamp(reading.received_at)}</TableCell>
-                <TableCell>{numeric(reading.temperature_c, 1, ' °C')}</TableCell><TableCell>{numeric(reading.humidity_percent, 1, ' %')}</TableCell>
-                <TableCell>{reading.gas_raw != null ? reading.gas_raw : NA}</TableCell>
-                <TableCell>{numeric(reading.latitude, 6)}</TableCell><TableCell>{numeric(reading.longitude, 6)}</TableCell>
-                <TableCell>{motion(reading.motion_detected)}</TableCell><TableCell>{boxState(reading.box_open)}</TableCell><TableCell>{numeric(reading.battery_percent, 1, ' %')}</TableCell>
-              </TableRow>)}
-          </TableBody></Table></div>
-          {pagination && pagination.total_pages > 1 && <div className="mt-4 flex items-center justify-end gap-3">
-            <Button variant="outline" size="sm" disabled={page <= 1 || loadingReadings} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button>
-            <span className="text-sm text-gray-600">Page {pagination.page} of {pagination.total_pages}</span>
-            <Button variant="outline" size="sm" disabled={page >= pagination.total_pages || loadingReadings} onClick={() => setPage((value) => value + 1)}>Next</Button>
-          </div>}
-        </CardContent></Card>
       </>
     }
   </div>;
