@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Battery, Box, CheckCircle2, Clock3, Droplets, Flame, Info, MapPinned, Phone, RefreshCw, ShieldCheck, Thermometer, Truck, User, Wifi } from 'lucide-react';
+import { Activity, Battery, Box, CheckCircle2, Clock3, Droplets, Flame, GraduationCap, Info, MapPinned, Phone, RefreshCw, ShieldCheck, Thermometer, Truck, User, Wifi } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError, apiService } from '@/services/api';
 import type { LatestSensorReadingResponse, SensorDeviceStatus, SensorOrderOption, SensorReadingHistoryResponse } from '@/types';
@@ -186,7 +186,15 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><GraduationCap className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Destination School</p>
+                      <p className="font-semibold text-gray-900 text-sm">{latestData?.delivery?.school || 'School Pickup Point'}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{latestData?.delivery?.pickup_location || 'Main Entrance'}</p>
+                    </div>
+                  </div>
                   <div className="flex items-start gap-3">
                     <div className="rounded-lg bg-blue-100 p-2 text-blue-700"><User className="h-5 w-5" /></div>
                     <div>
@@ -203,7 +211,7 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Currently Situated At</p>
                       <p className="font-semibold text-gray-900 text-sm">
-                        {latestData?.box_location?.place_name || 'En Route to Ave Maria Convent, Negombo'}
+                        {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.school || 'School'}`}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {latestData?.box_location?.area || 'Negombo, Western Province'}
@@ -265,7 +273,7 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
               </ReadingCard>
               <ReadingCard icon={MapPinned} label="Delivery Box Situated At">
                 <span className="font-bold text-sm text-gray-900 block truncate">
-                  {latestData?.box_location?.place_name || 'En Route to School'}
+                  {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.school || 'School'}`}
                 </span>
                 {latest.latitude != null && latest.longitude != null && (
                   <div className="mt-1 flex flex-col gap-0.5">

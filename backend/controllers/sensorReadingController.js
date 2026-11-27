@@ -175,6 +175,7 @@ const ingestReading = async (req, res) => {
 
     // Update real-time box status
     if (value.temperatureC != null) {
+      device.temperature = device.temperature || {};
       device.temperature.current = value.temperatureC;
       device.temperature.lastUpdated = now;
     }
@@ -270,7 +271,10 @@ const ingestReading = async (req, res) => {
     }
 
     device.lastReading = serializeReading(reading);
-    await Promise.allSettled([device.save(), order.save()]);
+    const savePromises = [];
+    if (typeof device.save === 'function') savePromises.push(device.save());
+    if (typeof order.save === 'function') savePromises.push(order.save());
+    if (savePromises.length) await Promise.allSettled(savePromises);
 
     return res.status(201).json({
       success: true,
@@ -291,7 +295,11 @@ const verifyOrderAccess = async (req, res) => {
     res.status(400).json({ success: false, code: 'INVALID_ORDER_ID', message: 'A valid order ID is required.' });
     return null;
   }
-  const order = await Order.findById(req.params.orderId);
+  let orderQuery = Order.findById(req.params.orderId);
+  if (typeof orderQuery.populate === 'function') {
+    orderQuery = orderQuery.populate('student pickupPointId');
+  }
+  const order = await orderQuery;
   if (!order) {
     res.status(404).json({ success: false, code: 'ORDER_NOT_FOUND', message: 'Order not found.' });
     return null;
@@ -408,14 +416,34 @@ const computeFoodSafety = (latest) => {
   };
 };
 
-const getSituatedLocation = (orderStatus, latitude, longitude) => {
+const getOrderDestination = (order) => {
+  const school =
+    order?.pickupPointId?.school?.name ||
+    order?.school ||
+    order?.student?.school ||
+    order?.pickupLocation ||
+    'Ave Maria Convent, Negombo';
+
+  const pickupLocation =
+    order?.pickupPointId?.name ||
+    order?.pickupLocation ||
+    school;
+
+  return { school, pickupLocation };
+};
+
+const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = 'Ave Maria Convent, Negombo', pickupLocation = '') => {
   const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.2115;
   const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 79.8398;
+  const schoolLabel = targetSchool || 'Ave Maria Convent, Negombo';
+  const pickupLabel = (pickupLocation && pickupLocation !== schoolLabel)
+    ? `${pickupLocation} (${schoolLabel})`
+    : schoolLabel;
 
   if (orderStatus === 'delivered' || orderStatus === 'completed') {
     return {
-      place_name: 'Ave Maria Convent, Negombo',
-      description: 'Main Entrance School Pickup Point',
+      place_name: pickupLabel,
+      description: `Delivery Completed at ${schoolLabel}`,
       area: 'Negombo, Western Province, Sri Lanka',
       coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       latitude: lat,
@@ -425,8 +453,8 @@ const getSituatedLocation = (orderStatus, latitude, longitude) => {
   }
   if (orderStatus === 'dispatched' || orderStatus === 'in-transit') {
     return {
-      place_name: 'En Route to Ave Maria Convent',
-      description: 'Delivery Van Transit along Negombo Coastal Corridor',
+      place_name: `En Route to ${schoolLabel}`,
+      description: `Delivery Van Transit to ${schoolLabel}`,
       area: 'Negombo, Western Province, Sri Lanka',
       coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       latitude: lat,
@@ -436,7 +464,7 @@ const getSituatedLocation = (orderStatus, latitude, longitude) => {
   }
   return {
     place_name: "Nayomi's Waterfront Kitchen Hub",
-    description: 'Food Preparation & Smart Box Loading Station',
+    description: `Preparing food for delivery to ${schoolLabel}`,
     area: 'Negombo Waterfront, Sri Lanka',
     coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     latitude: lat,
@@ -479,7 +507,8 @@ const getLatestReading = async (req, res) => {
       : (box?.location?.coordinates?.[0] || box?.lastReading?.longitude || 79.8398);
 
     const foodSafety = computeFoodSafety(latest);
-    const boxLocation = getSituatedLocation(order.status, effectiveLat, effectiveLng);
+    const destination = getOrderDestination(order);
+    const boxLocation = getSituatedLocation(order.status, effectiveLat, effectiveLng, destination.school, destination.pickupLocation);
 
     return res.json({
       success: true,
@@ -514,9 +543,9 @@ const getLatestReading = async (req, res) => {
           dispatch_hub: driver?.dispatchHub || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
         },
         delivery: {
-          recipient_name: order.studentName || order.recipientName || 'Student',
-          school: order.school || 'Ave Maria Convent, Negombo',
-          pickup_location: order.pickupLocation || 'Ave Maria Convent, Negombo',
+          recipient_name: order.student?.name || order.studentName || order.recipientName || 'Student',
+          school: destination.school,
+          pickup_location: destination.pickupLocation,
           pickup_time: order.pickupTime || '08:00 - 08:30 AM',
           delivery_date: isoOrNull(order.deliveryDate),
           status: order.status,

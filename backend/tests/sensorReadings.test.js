@@ -3,6 +3,8 @@ process.env.DEVICE_TOKEN_PEPPER = 'test-only-device-pepper-with-adequate-length'
 
 jest.mock('../models/DeliveryBox', () => ({ findOne: jest.fn() }));
 jest.mock('../models/Order', () => ({ findById: jest.fn(), find: jest.fn() }));
+jest.mock('../models/Alert', () => ({ findOne: jest.fn().mockResolvedValue(null), create: jest.fn() }));
+jest.mock('../models/Driver', () => ({ findOne: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }) }));
 jest.mock('../models/SensorReading', () => ({
   create: jest.fn(),
   findOne: jest.fn(),

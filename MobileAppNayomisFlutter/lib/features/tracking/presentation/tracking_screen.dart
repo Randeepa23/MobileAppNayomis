@@ -132,6 +132,11 @@ class TrackingScreen extends ConsumerWidget {
           final destination = snapshot.destination;
           final statusColor = _statusColor(snapshot.deliveryStatus);
           final statusLabel = _statusLabel(snapshot.deliveryStatus);
+          final schoolName = (destination?.school != null && destination!.school.trim().isNotEmpty)
+              ? destination.school
+              : (destination?.pickupLocation != null && destination!.pickupLocation.trim().isNotEmpty)
+                  ? destination.pickupLocation
+                  : 'School Pickup Point';
 
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(latestTrackingProvider(orderId).future),
@@ -185,7 +190,7 @@ class TrackingScreen extends ConsumerWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                destination?.school ?? 'Ave Maria Convent, Negombo',
+                                schoolName,
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -223,7 +228,7 @@ class TrackingScreen extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
+                                snapshot.boxLocation?.placeName ?? 'En Route to $schoolName',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
