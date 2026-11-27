@@ -171,20 +171,6 @@ class _StudentProfileView extends ConsumerWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(
-                      Icons.badge_outlined,
-                      color: AppColors.brandSecondary,
-                    ),
-                    title: const Text('Grade'),
-                    subtitle: Text(
-                      (customer.grade != null &&
-                              customer.grade!.trim().isNotEmpty)
-                          ? customer.grade!
-                          : 'Grade 10',
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
                       Icons.card_giftcard_outlined,
                       color: AppColors.brandAccentDark,
                     ),
