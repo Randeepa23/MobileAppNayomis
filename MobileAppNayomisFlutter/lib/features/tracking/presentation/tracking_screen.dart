@@ -13,12 +13,29 @@ class TrackingScreen extends ConsumerWidget {
     final targetLat = lat ?? 7.2115;
     final targetLng = lng ?? 79.8398;
     final googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$targetLat,$targetLng');
+    final appleMapsUrl = Uri.parse('maps://?q=Delivery+Location&ll=$targetLat,$targetLng');
+
+    // 1. Try external application (native Google Maps app or default browser)
     try {
-      if (await canLaunchUrl(googleMapsUrl)) {
-        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(googleMapsUrl);
-      }
+      final launched = await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      if (launched) return;
+    } catch (_) {}
+
+    // 2. Try in-app browser view (Safari / Chrome custom tab inside the app)
+    try {
+      final launched = await launchUrl(googleMapsUrl, mode: LaunchMode.inAppBrowserView);
+      if (launched) return;
+    } catch (_) {}
+
+    // 3. Try platform default launch
+    try {
+      final launched = await launchUrl(googleMapsUrl, mode: LaunchMode.platformDefault);
+      if (launched) return;
+    } catch (_) {}
+
+    // 4. Fallback to native Apple Maps (works built-in on iOS / iOS Simulator)
+    try {
+      await launchUrl(appleMapsUrl, mode: LaunchMode.platformDefault);
     } catch (_) {}
   }
 
@@ -26,10 +43,12 @@ class TrackingScreen extends ConsumerWidget {
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
     final callUri = Uri.parse('tel:$cleanPhone');
     try {
-      if (await canLaunchUrl(callUri)) {
+      await launchUrl(callUri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      try {
         await launchUrl(callUri);
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
   }
 
   Color _statusColor(String status) {
