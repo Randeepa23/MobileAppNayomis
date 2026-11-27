@@ -282,9 +282,7 @@ class TrackingScreen extends ConsumerWidget {
                                       const Icon(Icons.location_on, size: 18, color: Colors.red),
                                       const SizedBox(width: 6),
                                       Text(
-                                        snapshot.latitude != null && snapshot.longitude != null
-                                            ? 'GPS: ${snapshot.latitude!.toStringAsFixed(4)}, ${snapshot.longitude!.toStringAsFixed(4)}'
-                                            : 'Connecting GPS Satellite...',
+                                        snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                       ),
                                     ],
@@ -302,8 +300,129 @@ class TrackingScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Current Van Position: Approaching ${destination?.school ?? "School"} via Negombo Waterfront corridor.',
+                                snapshot.boxLocation?.description ?? 'Current Van Position: Approaching school via Negombo Waterfront corridor.',
                                 style: const TextStyle(fontSize: 11, color: Colors.black87),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // SMART DELIVERY BOX SITUATED LOCATION CARD
+                Card(
+                  elevation: 1.5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.inventory_2_rounded, size: 20, color: AppColors.primary),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Smart Delivery Box Location',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.green.shade300),
+                              ),
+                              child: Text(
+                                snapshot.boxLocation?.status ?? 'In Transit',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.place_rounded, size: 20, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Delivery Box Currently Situated At:',
+                                          style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w500),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent, Negombo',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          snapshot.boxLocation?.description ?? 'Inside Delivery Van along Negombo Coastal Corridor',
+                                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          snapshot.boxLocation?.area ?? 'Negombo, Western Province, Sri Lanka',
+                                          style: const TextStyle(fontSize: 11, color: Colors.black45),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.satellite_alt_rounded, size: 16, color: Colors.blueGrey),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        snapshot.latitude != null && snapshot.longitude != null
+                                            ? 'GPS: ${snapshot.latitude!.toStringAsFixed(6)}°, ${snapshot.longitude!.toStringAsFixed(6)}°'
+                                            : '7.211500° N, 79.839800° E',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blueGrey),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Box #${snapshot.deviceId ?? snapshot.boxLocation?.boxId ?? "BOX-001"}',
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

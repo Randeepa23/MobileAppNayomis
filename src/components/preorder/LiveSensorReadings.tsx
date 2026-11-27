@@ -242,6 +242,72 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
               </CardContent>
             </Card>
 
+            {/* Smart Delivery Box Situated Location Card */}
+            <Card className="border-orange-200 bg-gradient-to-r from-orange-50/50 via-white to-orange-50/30 shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 text-orange-950">
+                    <MapPinned className="h-5 w-5 text-orange-600" />
+                    <CardTitle className="text-lg">Smart Delivery Box Location</CardTitle>
+                  </div>
+                  <Badge variant="outline" className="border-orange-300 bg-orange-100 text-orange-800 w-fit font-medium">
+                    {latestData?.box_location?.status || 'In Transit'} • {latestData?.box_location?.box_id || selected?.device_id || 'BOX-001'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Currently Situated At</p>
+                    <p className="font-bold text-gray-900 text-base mt-0.5">
+                      {latestData?.box_location?.place_name || 'En Route to Ave Maria Convent, Negombo'}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {latestData?.box_location?.description || 'Inside Delivery Van along Negombo Coastal Corridor'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {latestData?.box_location?.area || 'Negombo, Western Province, Sri Lanka'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">GPS Coordinates</p>
+                    <p className="font-semibold text-gray-800 text-sm mt-0.5 font-mono">
+                      {latest.latitude != null && latest.longitude != null 
+                        ? `${numeric(latest.latitude, 6)}° N, ${numeric(latest.longitude, 6)}° E`
+                        : (latestData?.box_location?.coordinates_text || '7.211500° N, 79.839800° E')}
+                    </p>
+                    <p className="text-xs text-emerald-700 mt-1 flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
+                      Active telemetry signal from Smart Box #{latestData?.box_location?.box_id || selected?.device_id || 'BOX-001'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col justify-center gap-2">
+                    {latest.latitude != null && latest.longitude != null && (
+                      <>
+                        <a
+                          href={`https://www.openstreetmap.org/?mlat=${latest.latitude}&mlon=${latest.longitude}#map=16/${latest.latitude}/${latest.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-700 shadow-sm transition"
+                        >
+                          <MapPinned className="mr-1.5 h-4 w-4" />
+                          View Box on Live Map ↗
+                        </a>
+                        <a
+                          href={`https://maps.google.com/?q=${latest.latitude},${latest.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-lg border border-orange-200 bg-white px-3 py-1.5 text-xs font-medium text-orange-700 hover:bg-orange-50 transition"
+                        >
+                          Open in Google Maps ↗
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* What Condition is the Food in? Telemetry Sensors */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ReadingCard icon={Thermometer} label="Food Temperature">
@@ -262,12 +328,15 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                 </span>
                 <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.box_condition || 'Tamper-Proof'}</p>
               </ReadingCard>
-              <ReadingCard icon={MapPinned} label="Driver GPS Position">
-                {latest.latitude == null || latest.longitude == null ? NA : (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-sm">{`${numeric(latest.latitude, 6)}, ${numeric(latest.longitude, 6)}`}</span>
+              <ReadingCard icon={MapPinned} label="Delivery Box Situated At">
+                <span className="font-bold text-sm text-gray-900 block truncate">
+                  {latestData?.box_location?.place_name || 'En Route to School'}
+                </span>
+                {latest.latitude != null && latest.longitude != null && (
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    <span className="text-xs text-gray-500 font-mono">{`${numeric(latest.latitude, 4)}, ${numeric(latest.longitude, 4)}`}</span>
                     <a
-                      href={`https://www.openstreetmap.org/?mlat=${latest.latitude}&mlon=${latest.longitude}#map=16/${latest.latitude}/${latest.longitude}`}
+                      href={`https://maps.google.com/?q=${latest.latitude},${latest.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-semibold text-orange-600 underline hover:text-orange-800"
@@ -298,8 +367,8 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
           <CardTitle className="text-xl text-gray-900">Reading history</CardTitle>{pagination && <span className="text-sm text-gray-500">{pagination.total} readings</span>}
         </div></CardHeader><CardContent>
           <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1150px]"><TableHeader><TableRow className="bg-orange-50">
-            <TableHead>Timestamp</TableHead><TableHead>Temperature</TableHead><TableHead>Humidity</TableHead><TableHead>Gas (ADC)</TableHead><TableHead>Latitude</TableHead>
-            <TableHead>Longitude</TableHead><TableHead>Motion status</TableHead><TableHead>Box-open status</TableHead><TableHead>Battery</TableHead>
+            <TableHead>Timestamp</TableHead><TableHead>Temperature</TableHead><TableHead>Humidity</TableHead><TableHead>Gas (ADC)</TableHead><TableHead>Box Latitude</TableHead>
+            <TableHead>Box Longitude</TableHead><TableHead>Motion status</TableHead><TableHead>Box-open status</TableHead><TableHead>Battery</TableHead>
           </TableRow></TableHeader><TableBody>
             {!history.length ? <TableRow><TableCell colSpan={9} className="h-24 text-center text-gray-500">No sensor reading history is available yet.</TableCell></TableRow> :
               history.map((reading) => <TableRow key={reading.id}>

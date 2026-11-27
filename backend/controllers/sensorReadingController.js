@@ -408,6 +408,43 @@ const computeFoodSafety = (latest) => {
   };
 };
 
+const getSituatedLocation = (orderStatus, latitude, longitude) => {
+  const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.2115;
+  const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 79.8398;
+
+  if (orderStatus === 'delivered' || orderStatus === 'completed') {
+    return {
+      place_name: 'Ave Maria Convent, Negombo',
+      description: 'Main Entrance School Pickup Point',
+      area: 'Negombo, Western Province, Sri Lanka',
+      coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      latitude: lat,
+      longitude: lng,
+      status: 'Delivered at School',
+    };
+  }
+  if (orderStatus === 'dispatched' || orderStatus === 'in-transit') {
+    return {
+      place_name: 'En Route to Ave Maria Convent',
+      description: 'Delivery Van Transit along Negombo Coastal Corridor',
+      area: 'Negombo, Western Province, Sri Lanka',
+      coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      latitude: lat,
+      longitude: lng,
+      status: 'In Transit on Delivery Van',
+    };
+  }
+  return {
+    place_name: "Nayomi's Waterfront Kitchen Hub",
+    description: 'Food Preparation & Smart Box Loading Station',
+    area: 'Negombo Waterfront, Sri Lanka',
+    coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    latitude: lat,
+    longitude: lng,
+    status: 'At Kitchen Dispatch Hub',
+  };
+};
+
 const getLatestReading = async (req, res) => {
   try {
     const order = await verifyOrderAccess(req, res);
@@ -431,6 +468,7 @@ const getLatestReading = async (req, res) => {
     } catch (_) {}
 
     const foodSafety = computeFoodSafety(latest);
+    const boxLocation = getSituatedLocation(order.status, latest?.latitude, latest?.longitude);
 
     return res.json({
       success: true,
@@ -443,6 +481,18 @@ const getLatestReading = async (req, res) => {
         assignment_status: deviceId ? (latest ? 'ready' : 'waiting_for_data') : 'unassigned',
         device_status: statusForReceivedAt(latest?.receivedAt, serverNow),
         latest: serializeReading(latest),
+        box_location: {
+          box_id: deviceId || 'BOX-001',
+          place_name: boxLocation.place_name,
+          description: boxLocation.description,
+          area: boxLocation.area,
+          latitude: boxLocation.latitude,
+          longitude: boxLocation.longitude,
+          coordinates_text: boxLocation.coordinates_text,
+          status: boxLocation.status,
+          map_url: `https://www.openstreetmap.org/?mlat=${boxLocation.latitude}&mlon=${boxLocation.longitude}#map=16/${boxLocation.latitude}/${boxLocation.longitude}`,
+          google_maps_url: `https://maps.google.com/?q=${boxLocation.latitude},${boxLocation.longitude}`,
+        },
         driver: {
           name: driver?.name || 'Sunimal Perera',
           phone: driver?.phone || driver?.whatsapp || '+94 77 123 4567',

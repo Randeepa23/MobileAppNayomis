@@ -269,6 +269,18 @@ export interface LatestSensorReadingResponse {
     delivery_date?: string | null;
     status: string;
   } | null;
+  box_location?: {
+    box_id: string;
+    place_name: string;
+    description: string;
+    area: string;
+    latitude: number;
+    longitude: number;
+    coordinates_text: string;
+    status: string;
+    map_url: string;
+    google_maps_url: string;
+  } | null;
   food_safety?: {
     status: 'safe' | 'warning' | 'critical';
     status_label: string;

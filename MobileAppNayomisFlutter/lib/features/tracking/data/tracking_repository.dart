@@ -85,6 +85,45 @@ class DeliveryDestination {
   );
 }
 
+class BoxLocationInfo {
+  const BoxLocationInfo({
+    required this.boxId,
+    required this.placeName,
+    required this.description,
+    required this.area,
+    this.latitude,
+    this.longitude,
+    required this.coordinatesText,
+    required this.status,
+    required this.mapUrl,
+    required this.googleMapsUrl,
+  });
+
+  final String boxId;
+  final String placeName;
+  final String description;
+  final String area;
+  final double? latitude;
+  final double? longitude;
+  final String coordinatesText;
+  final String status;
+  final String mapUrl;
+  final String googleMapsUrl;
+
+  factory BoxLocationInfo.fromApi(Map<String, dynamic> json) => BoxLocationInfo(
+    boxId: json['box_id']?.toString() ?? 'BOX-001',
+    placeName: json['place_name']?.toString() ?? 'En Route to Ave Maria Convent, Negombo',
+    description: json['description']?.toString() ?? 'Inside Delivery Van along Negombo Coastal Corridor',
+    area: json['area']?.toString() ?? 'Negombo, Western Province, Sri Lanka',
+    latitude: (json['latitude'] as num?)?.toDouble(),
+    longitude: (json['longitude'] as num?)?.toDouble(),
+    coordinatesText: json['coordinates_text']?.toString() ?? '',
+    status: json['status']?.toString() ?? 'In Transit on Delivery Van',
+    mapUrl: json['map_url']?.toString() ?? '',
+    googleMapsUrl: json['google_maps_url']?.toString() ?? '',
+  );
+}
+
 class LiveSensorSnapshot {
   const LiveSensorSnapshot({
     required this.orderId,
@@ -104,6 +143,7 @@ class LiveSensorSnapshot {
     this.driver,
     this.foodSafety,
     this.destination,
+    this.boxLocation,
   });
 
   final String orderId;
@@ -123,12 +163,14 @@ class LiveSensorSnapshot {
   final DriverInfo? driver;
   final FoodSafetyInfo? foodSafety;
   final DeliveryDestination? destination;
+  final BoxLocationInfo? boxLocation;
 
   factory LiveSensorSnapshot.fromApi(Map<String, dynamic> json) {
     final rawLatest = json['latest'] is Map ? Map<String, dynamic>.from(json['latest'] as Map) : null;
     final rawDriver = json['driver'] is Map ? Map<String, dynamic>.from(json['driver'] as Map) : null;
     final rawSafety = json['food_safety'] is Map ? Map<String, dynamic>.from(json['food_safety'] as Map) : null;
     final rawDelivery = json['delivery'] is Map ? Map<String, dynamic>.from(json['delivery'] as Map) : null;
+    final rawBoxLocation = json['box_location'] is Map ? Map<String, dynamic>.from(json['box_location'] as Map) : null;
     
     DateTime? rxTime;
     if (rawLatest?['received_at'] != null) {
@@ -155,6 +197,7 @@ class LiveSensorSnapshot {
       driver: rawDriver != null ? DriverInfo.fromApi(rawDriver) : null,
       foodSafety: rawSafety != null ? FoodSafetyInfo.fromApi(rawSafety) : null,
       destination: rawDelivery != null ? DeliveryDestination.fromApi(rawDelivery) : null,
+      boxLocation: rawBoxLocation != null ? BoxLocationInfo.fromApi(rawBoxLocation) : null,
     );
   }
 }
