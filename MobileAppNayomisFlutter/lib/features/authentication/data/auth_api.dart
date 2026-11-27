@@ -18,6 +18,7 @@ class AuthApi {
     required String name,
     required String email,
     required String password,
+    String? phone,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       'students/register',
@@ -25,6 +26,9 @@ class AuthApi {
         'name': name.trim(),
         'email': email.trim().toLowerCase(),
         'password': password,
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        if (phone != null && phone.trim().isNotEmpty) 'telephone': phone.trim(),
+        if (phone != null && phone.trim().isNotEmpty) 'whatsapp': phone.trim(),
       },
     );
     final envelope = ApiResponseDto.fromJson(response.data ?? const {});

@@ -13,18 +13,21 @@ const normalizeName = (value) => typeof value === 'string'
   : '';
 
 const safeStudent = (student) => {
+  const phoneValue = student.phone || student.telephone || student.whatsapp || '';
   const result = {
     _id: student._id,
     id: student._id,
     name: student.name,
     email: student.email,
+    phone: phoneValue,
+    telephone: phoneValue,
     role: 'user',
     points: typeof student.points === 'number' ? student.points : 0,
     loyaltyPoints: typeof student.points === 'number' ? student.points : 0,
     school: student.school || '',
     grade: student.grade || '',
     address: student.address || '',
-    whatsapp: student.whatsapp || '',
+    whatsapp: student.whatsapp || phoneValue,
     orders: student.orders || [],
     createdAt: student.createdAt,
     updatedAt: student.updatedAt,
@@ -76,6 +79,11 @@ const registerStudent = async (req, res) => {
   const name = normalizeName(req.body.name);
   const email = normalizeEmail(req.body.email);
   const password = req.body.password;
+  const phone = typeof req.body.phone === 'string'
+    ? req.body.phone.trim()
+    : (typeof req.body.telephone === 'string'
+      ? req.body.telephone.trim()
+      : (typeof req.body.whatsapp === 'string' ? req.body.whatsapp.trim() : ''));
   const errors = validateRegistration({ name, email, password });
   if (Object.keys(errors).length) return validationResponse(res, errors);
 
@@ -90,10 +98,12 @@ const registerStudent = async (req, res) => {
       email,
       password: hashedPassword,
       role: 'user',
+      phone: phone || undefined,
+      telephone: phone || undefined,
       school: typeof req.body.school === 'string' ? req.body.school.trim() : undefined,
       grade: typeof req.body.grade === 'string' ? req.body.grade.trim() : undefined,
       address: typeof req.body.address === 'string' ? req.body.address.trim() : undefined,
-      whatsapp: typeof req.body.whatsapp === 'string' ? req.body.whatsapp.trim() : undefined,
+      whatsapp: phone || (typeof req.body.whatsapp === 'string' ? req.body.whatsapp.trim() : undefined),
     });
     return res.status(201).json({
       success: true,
@@ -174,7 +184,55 @@ const getStudentById = (req, res) => {
   if (String(req.customer.studentId) !== String(req.params.id)) {
     return res.status(403).json({ success: false, code: 'PROFILE_ACCESS_DENIED', message: 'You can only access your own profile.' });
   }
-  return findAndReturnStudent(req.params.id, res, false);
+  return findAndReturnStudent(req.params.id, res, 'user', false);
+};
+
+const updateStudentProfile = async (req, res) => {
+  const id = req.customer.studentId;
+  if (!id) {
+    return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Authentication required' });
+  }
+
+  try {
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({ success: false, code: 'CUSTOMER_NOT_FOUND', message: 'User not found' });
+    }
+
+    if (typeof req.body.name === 'string' && req.body.name.trim()) {
+      student.name = normalizeName(req.body.name);
+    }
+    const phoneInput = typeof req.body.phone === 'string'
+      ? req.body.phone.trim()
+      : (typeof req.body.telephone === 'string' ? req.body.telephone.trim() : undefined);
+    if (typeof phoneInput !== 'undefined') {
+      student.phone = phoneInput;
+      student.telephone = phoneInput;
+      student.whatsapp = phoneInput;
+    }
+    if (typeof req.body.whatsapp === 'string') {
+      student.whatsapp = req.body.whatsapp.trim();
+    }
+    if (typeof req.body.address === 'string') {
+      student.address = req.body.address.trim();
+    }
+    if (typeof req.body.school === 'string') {
+      student.school = req.body.school.trim();
+    }
+    if (typeof req.body.grade === 'string') {
+      student.grade = req.body.grade.trim();
+    }
+
+    await student.save();
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: { student: safeStudent(student) },
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return res.status(500).json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to update profile' });
+  }
 };
 
 module.exports = {
@@ -184,4 +242,5 @@ module.exports = {
   loginStudent,
   getCurrentStudent,
   getStudentById,
+  updateStudentProfile,
 };

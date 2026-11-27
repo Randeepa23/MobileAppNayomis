@@ -798,6 +798,12 @@ export const EnhancedAdminDashboard: React.FC = () => {
                                 <Mail className="h-4 w-4" />
                                 {student.email}
                               </p>
+                              {(student.phone || (student as any).telephone || (student as any).whatsapp) && (
+                                <p className="text-sm text-gray-600 flex items-center gap-2">
+                                  <Phone className="h-4 w-4" />
+                                  {student.phone || (student as any).telephone || (student as any).whatsapp}
+                                </p>
+                              )}
                               {student.school && (
                                 <p className="text-sm text-gray-600">
                                   School: {student.school}

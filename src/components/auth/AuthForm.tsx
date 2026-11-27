@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Phone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,6 +30,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onClose }) => {
   const [registerForm, setRegisterForm] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: ''
   });
@@ -65,6 +66,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onClose }) => {
     e.preventDefault();
     setError('');
 
+    if (!registerForm.phone || registerForm.phone.trim().length < 8) {
+      setError('Please enter a valid telephone number (at least 8 digits)');
+      return;
+    }
+
     if (registerForm.password !== registerForm.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -78,10 +84,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onClose }) => {
     setIsLoading(true);
 
     try {
-      const result = await register(registerForm.name, registerForm.email, registerForm.password);
+      const result = await register(
+        registerForm.name,
+        registerForm.email,
+        registerForm.password,
+        registerForm.phone.trim()
+      );
       if (result.success) {
         // Clear form and switch to sign in
-        setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
+        setRegisterForm({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
         setError('');
         toast({
           title: "Account created successfully!",
@@ -272,6 +283,26 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onClose }) => {
                       className="pl-10"
                       value={registerForm.email}
                       onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                      required
+                    />
+                  </motion.div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-phone">Telephone / Phone Number</Label>
+                  <motion.div
+                    variants={inputVariants}
+                    whileFocus="focus"
+                    className="relative"
+                  >
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="register-phone"
+                      type="tel"
+                      placeholder="Enter your telephone number"
+                      className="pl-10"
+                      value={registerForm.phone}
+                      onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
                       required
                     />
                   </motion.div>

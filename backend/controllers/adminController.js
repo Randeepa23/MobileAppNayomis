@@ -32,7 +32,7 @@ const getAllOrders = async (req, res) => {
   try {
     const { limit } = req.query;
     let query = Order.find()
-      .populate('student', 'name email school')
+      .populate('student', 'name email school phone telephone whatsapp')
       .populate('items.foodItem', 'name price')
       .sort({ createdAt: -1 });
     

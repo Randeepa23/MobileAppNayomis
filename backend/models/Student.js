@@ -17,7 +17,9 @@ const studentSchema = new mongoose.Schema({
     required: false
   },
   address: { type: String, required: false },
-  whatsapp: { type: String, required: false },
+  phone: { type: String, required: false, trim: true },
+  telephone: { type: String, required: false, trim: true },
+  whatsapp: { type: String, required: false, trim: true },
   points: { type: Number, default: 0 },
   wallet: {
     balance: { type: Number, default: 0, min: 0 },

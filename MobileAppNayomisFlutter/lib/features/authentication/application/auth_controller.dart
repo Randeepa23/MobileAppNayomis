@@ -64,10 +64,17 @@ class RegistrationController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register(
+    String name,
+    String email,
+    String password, {
+    String? phone,
+  }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(authRepositoryProvider).register(name, email, password),
+      () => ref
+          .read(authRepositoryProvider)
+          .register(name, email, password, phone: phone),
     );
     return !state.hasError;
   }

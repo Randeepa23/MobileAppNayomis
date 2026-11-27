@@ -31,7 +31,8 @@ import {
   RefreshCw,
   Cpu,
   ShieldAlert,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Phone
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Order, Student, Food } from '@/types';
@@ -899,6 +900,7 @@ export const AdminDashboard: React.FC = () => {
                         <TableRow>
                           <TableHead className="font-semibold text-slate-700">Student Name</TableHead>
                           <TableHead className="font-semibold text-slate-700">Email Address</TableHead>
+                          <TableHead className="font-semibold text-slate-700">Telephone / Phone</TableHead>
                           <TableHead className="font-semibold text-slate-700">School & Grade</TableHead>
                           <TableHead className="font-semibold text-slate-700">Order Count</TableHead>
                           <TableHead className="font-semibold text-slate-700">Loyalty Points</TableHead>
@@ -910,6 +912,12 @@ export const AdminDashboard: React.FC = () => {
                           <TableRow key={student._id} className="hover:bg-slate-50/70 transition-colors">
                             <TableCell className="font-medium text-slate-900">{student.name || 'Student'}</TableCell>
                             <TableCell className="text-xs text-slate-600 font-mono">{student.email || 'N/A'}</TableCell>
+                            <TableCell className="text-xs text-slate-700 font-mono">
+                              <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                <Phone className="h-3 w-3 text-slate-400" />
+                                {student.phone || (student as any).telephone || (student as any).whatsapp || 'N/A'}
+                              </span>
+                            </TableCell>
                             <TableCell className="text-xs text-slate-700">
                               <div className="font-medium">{(student as any).school || 'Registered School'}</div>
                               <div className="text-slate-400">Grade: {(student as any).grade || 'N/A'}</div>
@@ -962,6 +970,12 @@ export const AdminDashboard: React.FC = () => {
                   <p className="font-semibold text-slate-800">
                     {(selectedOrder as any).student?.name || selectedOrder.studentName || 'Student'}
                   </p>
+                  {((selectedOrder as any).student?.phone || (selectedOrder as any).student?.telephone || (selectedOrder as any).student?.whatsapp) && (
+                    <p className="text-xs text-blue-600 font-mono flex items-center gap-1 mt-0.5">
+                      <Phone className="h-3 w-3" />
+                      {(selectedOrder as any).student?.phone || (selectedOrder as any).student?.telephone || (selectedOrder as any).student?.whatsapp}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase text-slate-400 block">School Destination</span>

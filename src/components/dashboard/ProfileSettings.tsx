@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,16 +25,28 @@ import { toast } from 'sonner';
 import { LiveSensorReadings } from '@/components/preorder/LiveSensorReadings';
 
 export const ProfileSettings: React.FC = () => {
-  const { user, syncLoyaltyPoints } = useAuth();
+  const { user, updateProfile, syncLoyaltyPoints } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: '',
-    address: '',
+    phone: user?.phone || (user as any)?.telephone || (user as any)?.whatsapp || '',
+    address: (user as any)?.address || '',
     allergies: '',
     preferences: ''
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || (user as any)?.telephone || (user as any)?.whatsapp || '',
+        address: (user as any)?.address || '',
+      }));
+    }
+  }, [user]);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -58,9 +70,19 @@ export const ProfileSettings: React.FC = () => {
 
   const handleSaveProfile = async () => {
     try {
-      // TODO: Implement API call to update profile
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
+      const ok = await updateProfile({
+        name: formData.name,
+        phone: formData.phone,
+        telephone: formData.phone,
+        whatsapp: formData.phone,
+        address: formData.address,
+      });
+      if (ok) {
+        toast.success('Profile updated successfully!');
+        setIsEditing(false);
+      } else {
+        toast.error('Failed to update profile. Please try again.');
+      }
     } catch (error) {
       toast.error('Failed to update profile. Please try again.');
     }
@@ -129,6 +151,10 @@ export const ProfileSettings: React.FC = () => {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold">{user?.name}</h3>
                 <p className="text-gray-600">{user?.email}</p>
+                <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                  <Phone className="h-3.5 w-3.5 text-gray-400" />
+                  {user?.phone || (user as any)?.telephone || (user as any)?.whatsapp || 'No phone number set'}
+                </p>
                 <div className="flex items-center space-x-4 mt-2">
                   <Badge className={loyaltyTier.color}>
                     <Star className="h-3 w-3 mr-1" />

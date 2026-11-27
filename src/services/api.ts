@@ -126,6 +126,13 @@ class ApiService {
     return this.request<{ student: Student }>('/students/me');
   }
 
+  async updateProfile(updates: Partial<Student>): Promise<ApiResponse<{ student: Student }>> {
+    return this.request<{ student: Student }>('/students/profile', {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
   // Food Management Routes - matches /api/food/*
   async getFoods(options?: { day?: string; nextDay?: boolean }): Promise<ApiResponse<FoodsResponse>> {
     let endpoint = '/food';

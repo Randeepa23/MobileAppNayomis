@@ -19,9 +19,19 @@ class AuthRepository {
     }
   }
 
-  Future<void> register(String name, String email, String password) async {
+  Future<void> register(
+    String name,
+    String email,
+    String password, {
+    String? phone,
+  }) async {
     try {
-      await _api.register(name: name, email: email, password: password);
+      await _api.register(
+        name: name,
+        email: email,
+        password: password,
+        phone: phone,
+      );
     } catch (error) {
       throw ApiErrorMapper.from(error);
     }

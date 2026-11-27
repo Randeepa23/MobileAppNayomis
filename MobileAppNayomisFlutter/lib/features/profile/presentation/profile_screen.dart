@@ -144,6 +144,19 @@ class _StudentProfileView extends ConsumerWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(
+                      Icons.phone_outlined,
+                      color: AppColors.brandSecondary,
+                    ),
+                    title: const Text('Telephone'),
+                    subtitle: Text(
+                      (customer.phone != null && customer.phone!.trim().isNotEmpty)
+                          ? customer.phone!
+                          : 'Not set',
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(
                       Icons.school_outlined,
                       color: AppColors.brandSecondary,
                     ),

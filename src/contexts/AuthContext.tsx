@@ -7,7 +7,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (updates: Partial<Student>) => Promise<boolean>;
   logout: () => void;
   syncLoyaltyPoints: () => Promise<void>;
 }
@@ -35,6 +36,10 @@ const normalizeStudent = (student: Student): Student => ({
   _id: (student as Student & { id?: string }).id || student._id,
   name: student.name,
   email: student.email,
+  phone: (student as any).phone || (student as any).telephone || (student as any).whatsapp || '',
+  telephone: (student as any).telephone || (student as any).phone || (student as any).whatsapp || '',
+  whatsapp: (student as any).whatsapp || (student as any).phone || '',
+  address: (student as any).address || '',
   role: student.role || 'user',
   points: student.points || (student as Student & { loyaltyPoints?: number }).loyaltyPoints || 0,
   orders: student.orders || [],
@@ -146,10 +151,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
+  const register = async (name: string, email: string, password: string, phone?: string): Promise<{ success: boolean; message?: string }> => {
     try {
       setIsLoading(true);
-      const payload = { name, email, password };
+      const payload: any = { name, email, password };
+      if (phone && phone.trim()) {
+        payload.phone = phone.trim();
+        payload.telephone = phone.trim();
+        payload.whatsapp = phone.trim();
+      }
       const response = await apiService.register(payload);
       
       if (response.success === true) {
@@ -169,6 +179,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         errorMessage = 'Email already exists';
       }
       return { success: false, message: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Student>): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const response = await apiService.updateProfile(updates);
+      if (response.success && response.data?.student) {
+        const validated = normalizeStudent(response.data.student);
+        setUser(validated);
+        localStorage.setItem('nayomis_user', JSON.stringify(validated));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -199,6 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     register,
+    updateProfile,
     logout,
     syncLoyaltyPoints,
   };

@@ -67,6 +67,7 @@ export const AdminStudents: React.FC = () => {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Telephone / Phone</TableHead>
                     <TableHead>Points</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead>Status</TableHead>
@@ -77,6 +78,7 @@ export const AdminStudents: React.FC = () => {
                     <TableRow key={student._id}>
                       <TableCell className="font-medium">{student.name}</TableCell>
                       <TableCell>{student.email}</TableCell>
+                      <TableCell className="font-mono text-xs">{student.phone || (student as any).telephone || (student as any).whatsapp || 'N/A'}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{student.points || 0} pts</Badge>
                       </TableCell>

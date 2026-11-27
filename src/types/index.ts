@@ -3,6 +3,10 @@ export interface Student {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
+  telephone?: string;
+  whatsapp?: string;
+  address?: string;
   role: 'user' | 'admin';
   points: number;
   orders: string[];
@@ -84,6 +88,9 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  phone?: string;
+  telephone?: string;
+  whatsapp?: string;
 }
 
 export interface CreateFoodRequest {

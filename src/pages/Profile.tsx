@@ -22,6 +22,7 @@ import {
   Edit2,
   Save,
   X,
+  Phone,
   Radio
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,10 +34,20 @@ import { LiveSensorReadings } from '@/components/preorder/LiveSensorReadings';
 
 export const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', email: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
   
-  const { user, syncLoyaltyPoints } = useAuth();
+  const { user, updateProfile, syncLoyaltyPoints } = useAuth();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (user) {
+      setEditForm({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || (user as any).telephone || (user as any).whatsapp || '',
+      });
+    }
+  }, [user]);
 
   // Fetch user's order statistics
   const { data: orderStats } = useQuery({
@@ -87,23 +98,45 @@ export const Profile: React.FC = () => {
   const handleEditToggle = () => {
     if (isEditing) {
       setIsEditing(false);
-      setEditForm({ name: '', email: '' });
+      setEditForm({ name: '', email: '', phone: '' });
     } else {
       setIsEditing(true);
       setEditForm({ 
         name: user?.name || '', 
-        email: user?.email || '' 
+        email: user?.email || '',
+        phone: user?.phone || (user as any)?.telephone || (user as any)?.whatsapp || ''
       });
     }
   };
 
   const handleSaveProfile = async () => {
-    // Note: This would need a backend endpoint to update user profile
-    toast({
-      title: "Profile update",
-      description: "Profile update functionality would be implemented here.",
-    });
-    setIsEditing(false);
+    try {
+      const ok = await updateProfile({
+        name: editForm.name,
+        phone: editForm.phone,
+        telephone: editForm.phone,
+        whatsapp: editForm.phone,
+      });
+      if (ok) {
+        toast({
+          title: "Profile updated",
+          description: "Your profile information has been saved.",
+        });
+        setIsEditing(false);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update profile.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!user) {
@@ -204,7 +237,18 @@ export const Profile: React.FC = () => {
                       id="edit-email"
                       type="email"
                       value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      disabled
+                      className="mt-1 bg-slate-50 text-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-phone">Telephone / Phone Number</Label>
+                    <Input
+                      id="edit-phone"
+                      type="tel"
+                      placeholder="Enter your telephone number"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                       className="mt-1"
                     />
                   </div>
@@ -222,6 +266,13 @@ export const Profile: React.FC = () => {
                   <div>
                     <span className="font-medium text-gray-700">Email</span>
                     <p className="text-gray-900">{user.email}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Telephone / Phone</span>
+                    <p className="text-gray-900 flex items-center gap-1.5 mt-0.5">
+                      <Phone className="h-3.5 w-3.5 text-gray-400" />
+                      {user.phone || (user as any).telephone || (user as any).whatsapp || 'Not provided'}
+                    </p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Account Status</span>

@@ -19,6 +19,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   bool _obscure = true;
@@ -27,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _phone.dispose();
     _password.dispose();
     _confirm.dispose();
     super.dispose();
@@ -37,7 +39,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     FocusScope.of(context).unfocus();
     final success = await ref
         .read(registrationControllerProvider.notifier)
-        .register(_name.text, _email.text, _password.text);
+        .register(
+          _name.text,
+          _email.text,
+          _password.text,
+          phone: _phone.text.trim(),
+        );
     _password.clear();
     _confirm.clear();
     if (success && mounted) {
@@ -98,6 +105,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   labelText: 'Email',
                   hintText: 'you@example.com',
                   prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.telephoneNumber],
+                validator: (value) {
+                  final required = Validators.required(value, 'Telephone number');
+                  if (required != null) return required;
+                  return value!.trim().length >= 8
+                      ? null
+                      : 'Enter a valid telephone number (at least 8 digits).';
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Telephone number',
+                  hintText: '077 123 4567',
+                  prefixIcon: Icon(Icons.phone_outlined),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
