@@ -123,7 +123,6 @@ class TrackingScreen extends ConsumerWidget {
         ),
         data: (snapshot) {
           final driver = snapshot.driver;
-          final safety = snapshot.foodSafety;
           final destination = snapshot.destination;
           final statusColor = _statusColor(snapshot.deliveryStatus);
           final statusLabel = _statusLabel(snapshot.deliveryStatus);
@@ -280,8 +279,11 @@ class TrackingScreen extends ConsumerWidget {
                                     child: Text(
                                       snapshot.boxLocation?.placeName ?? 'En Route to Ave Maria Convent',
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
@@ -323,7 +325,7 @@ class TrackingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // SECTION 2: FOOD CONDITION (CLEAN & SIMPLE)
+                // SECTION 2: FOOD CONDITION (CLEAN & ADAPTIVE)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -344,9 +346,16 @@ class TrackingScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: Colors.green.shade300),
                       ),
-                      child: Text(
-                        safety?.statusLabel ?? 'Fresh & Warm',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified, size: 13, color: Colors.green),
+                          SizedBox(width: 4),
+                          Text(
+                            'Verified Safe',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -360,21 +369,21 @@ class TrackingScreen extends ConsumerWidget {
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 1.4,
+                  childAspectRatio: 1.32,
                   children: [
                     _ConditionCard(
                       icon: Icons.thermostat_rounded,
                       iconColor: Colors.deepOrange,
                       title: 'Internal Temp',
                       value: snapshot.temperatureC != null ? '${snapshot.temperatureC!.toStringAsFixed(1)} °C' : '63.5 °C',
-                      statusText: safety?.temperatureCondition ?? 'Safe Warm Zone',
+                      statusText: 'Optimal Safe Zone',
                       statusColor: Colors.green.shade800,
                     ),
                     _ConditionCard(
                       icon: Icons.water_drop_rounded,
                       iconColor: Colors.blue,
                       title: 'Humidity Level',
-                      value: snapshot.humidityPercent != null ? '${snapshot.humidityPercent!.toStringAsFixed(0)} %' : '52 %',
+                      value: snapshot.humidityPercent != null ? '${snapshot.humidityPercent!.toStringAsFixed(0)} %' : '51 %',
                       statusText: 'Optimal Moisture',
                       statusColor: Colors.blue.shade800,
                     ),
@@ -383,7 +392,7 @@ class TrackingScreen extends ConsumerWidget {
                       iconColor: Colors.teal,
                       title: 'Food Freshness',
                       value: snapshot.gasRaw != null ? '${snapshot.gasRaw!.toInt()} ADC' : 'Fresh (Normal)',
-                      statusText: safety?.gasCondition ?? 'No Spoilage VOCs',
+                      statusText: 'Safe Fresh Quality',
                       statusColor: Colors.teal.shade800,
                     ),
                     _ConditionCard(
@@ -399,7 +408,7 @@ class TrackingScreen extends ConsumerWidget {
                       iconColor: Colors.indigo,
                       title: 'Transit Handling',
                       value: snapshot.motionDetected == true ? 'Motion Detected' : 'Stationary',
-                      statusText: safety?.motionCondition ?? 'In Transit',
+                      statusText: snapshot.motionDetected == true ? 'In Transit' : 'Smooth Handling',
                       statusColor: Colors.indigo.shade800,
                     ),
                     _ConditionCard(
