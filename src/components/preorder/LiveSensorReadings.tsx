@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Battery, Box, CheckCircle2, Clock3, Droplets, Flame, GraduationCap, Info, MapPinned, Phone, RefreshCw, ShieldCheck, Thermometer, Truck, User, Wifi } from 'lucide-react';
+import { Activity, Battery, Box, CheckCircle2, Clock3, Droplets, Flame, GraduationCap, Info, MapPinned, RefreshCw, ShieldCheck, Thermometer, Truck, Wifi } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError, apiService } from '@/services/api';
 import type { LatestSensorReadingResponse, SensorDeviceStatus, SensorOrderOption, SensorReadingHistoryResponse } from '@/types';
@@ -172,13 +172,13 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-28 w-full" />)}</div> :
           !latest ? <Card className="border-orange-200"><CardContent className="p-8 text-center text-gray-700">Waiting for the first reading from the smart delivery box.</CardContent></Card> :
           <>
-            {/* Live Delivery & Driver Tracking */}
+            {/* Live Delivery Tracking */}
             <Card className="border-orange-200 bg-gradient-to-r from-orange-50/40 via-white to-blue-50/30 shadow-sm">
               <CardHeader className="pb-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-gray-900">
                     <Truck className="h-5 w-5 text-orange-600" />
-                    <CardTitle className="text-lg">Live Delivery & Driver</CardTitle>
+                    <CardTitle className="text-lg">Live Delivery Tracking</CardTitle>
                   </div>
                   <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 w-fit font-medium">
                     {latestData?.box_location?.status || 'In Transit'} • Smart Box #{latestData?.box_location?.box_id || selected?.device_id || 'BOX-001'}
@@ -186,24 +186,13 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="flex items-start gap-3">
                     <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><GraduationCap className="h-5 w-5" /></div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Destination School</p>
                       <p className="font-semibold text-gray-900 text-sm">{latestData?.delivery?.school || 'School Pickup Point'}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{latestData?.delivery?.pickup_location || 'Main Entrance'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-blue-100 p-2 text-blue-700"><User className="h-5 w-5" /></div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Driver & Vehicle</p>
-                      <p className="font-semibold text-gray-900">{latestData?.driver?.name || 'Sunimal Perera'}</p>
-                      <p className="text-xs text-gray-600">{latestData?.driver?.vehicle_number || 'WP NB-4521'}</p>
-                      <a href={`tel:${latestData?.driver?.phone || '+94771234567'}`} className="text-xs font-semibold text-emerald-700 underline mt-0.5 inline-block">
-                        Call: {latestData?.driver?.phone || '+94 77 123 4567'}
-                      </a>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
