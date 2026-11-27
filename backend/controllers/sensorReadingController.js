@@ -456,19 +456,30 @@ const getLatestReading = async (req, res) => {
          || await SensorReading.findOne({ deviceId }).sort({ receivedAt: -1 }).lean())
       : null;
 
-    // Fetch assigned driver details for customer's visibility
+    // Fetch assigned driver and box details directly from MongoDB Atlas
     let driver = null;
+    let box = null;
     try {
-      driver = await Driver.findOne({
-        $or: [
-          { assignedBox: deviceId },
-          { email: 'driver@nayomis.com' },
-        ],
-      }).select('-password').lean();
+      [driver, box] = await Promise.all([
+        Driver.findOne({
+          $or: [
+            { assignedBox: deviceId },
+            { email: 'driver@nayomis.com' },
+          ],
+        }).select('-password').lean(),
+        DeliveryBox.findOne({ boxId: deviceId }).lean(),
+      ]);
     } catch (_) {}
 
+    const effectiveLat = latest?.latitude != null 
+      ? latest.latitude 
+      : (box?.location?.coordinates?.[1] || box?.lastReading?.latitude || 7.2115);
+    const effectiveLng = latest?.longitude != null 
+      ? latest.longitude 
+      : (box?.location?.coordinates?.[0] || box?.lastReading?.longitude || 79.8398);
+
     const foodSafety = computeFoodSafety(latest);
-    const boxLocation = getSituatedLocation(order.status, latest?.latitude, latest?.longitude);
+    const boxLocation = getSituatedLocation(order.status, effectiveLat, effectiveLng);
 
     return res.json({
       success: true,
