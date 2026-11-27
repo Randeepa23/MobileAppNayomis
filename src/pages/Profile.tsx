@@ -21,13 +21,15 @@ import {
   AlertCircle,
   Edit2,
   Save,
-  X
+  X,
+  Radio
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { LiveSensorReadings } from '@/components/preorder/LiveSensorReadings';
 
 export const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -266,6 +268,22 @@ export const Profile: React.FC = () => {
                   <div className="text-sm text-purple-700">Avg. Order Value</div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Live Food Safety & Delivery Sensor Readings */}
+          <Card className="border-orange-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-xl text-gray-900">
+                <Radio className="h-5 w-5 text-orange-600 animate-pulse" />
+                Live Food Safety & Sensor Monitoring
+              </CardTitle>
+              <CardDescription>
+                Real-time smart delivery box readings and driver location for your orders
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LiveSensorReadings active={true} />
             </CardContent>
           </Card>
         </motion.div>

@@ -17,10 +17,12 @@ import {
   Save, 
   X,
   Shield,
-  Star
+  Star,
+  Radio
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { LiveSensorReadings } from '@/components/preorder/LiveSensorReadings';
 
 export const ProfileSettings: React.FC = () => {
   const { user, syncLoyaltyPoints } = useAuth();
@@ -327,6 +329,19 @@ export const ProfileSettings: React.FC = () => {
             >
               Update Password
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Live Delivery & Food Safety Readings */}
+        <Card className="border-orange-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Radio className="h-5 w-5 text-orange-600 animate-pulse" />
+              Live Delivery & Food Safety Readings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LiveSensorReadings active={true} />
           </CardContent>
         </Card>
       </motion.div>

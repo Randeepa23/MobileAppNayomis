@@ -306,12 +306,22 @@ const verifyOrderAccess = async (req, res) => {
 
 const listSensorOrders = async (req, res) => {
   try {
-    const filter = { status: { $nin: TERMINAL_ORDER_STATUSES } };
-    if (req.sensorViewer.kind !== 'admin') filter.student = req.sensorViewer.studentId;
-    const orders = await Order.find(filter)
+    const studentFilter = req.sensorViewer.kind !== 'admin' ? { student: req.sensorViewer.studentId } : {};
+
+    // 1. First find active orders (in-transit, preparing, ready, confirmed)
+    let orders = await Order.find({ ...studentFilter, status: { $nin: TERMINAL_ORDER_STATUSES } })
       .select('_id status delivery.boxId delivery.assignedAt deliveryDate createdAt')
       .sort({ createdAt: -1 })
       .lean();
+
+    // 2. If no active orders, show recent deliveries so customer can review food condition
+    if (!orders.length) {
+      orders = await Order.find(studentFilter)
+        .select('_id status delivery.boxId delivery.assignedAt deliveryDate createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean();
+    }
     const serverNow = new Date();
     return res.json({
       success: true,
