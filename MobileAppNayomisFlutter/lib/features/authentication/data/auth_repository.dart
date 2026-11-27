@@ -38,4 +38,17 @@ class AuthRepository {
   }
 
   Future<void> logout() => _storage.clear();
+
+  Future<Customer?> restoreSession() async {
+    try {
+      final session = await _storage.read();
+      if (session == null || session.isExpired) {
+        await _storage.clear();
+        return null;
+      }
+      return await _api.currentCustomer();
+    } catch (_) {
+      return null;
+    }
+  }
 }

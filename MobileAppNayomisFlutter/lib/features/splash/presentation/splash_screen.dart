@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_router.dart';
 import '../../../core/assets/app_assets.dart';
 import '../../../core/design_system/app_colors.dart';
 import '../../authentication/application/auth_controller.dart';
@@ -33,10 +34,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
 
-    // 5-second total duration for clean in, hold/breathe, and out transitions
+    // 3-second duration for clean in, hold/breathe, and out transitions
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 5000),
+      duration: const Duration(milliseconds: 3000),
     );
 
     // In-transition (0s to 1.3s -> 0.0 to 0.26)
@@ -105,6 +106,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void _navigateNext() {
     if (_navigated || !mounted) return;
     _navigated = true;
+
+    // Mark splash as completed so it never reappears during this session / upon login
+    markSplashCompleted();
 
     final auth = ref.read(authControllerProvider);
     final isAuthenticated = auth.value?.isAuthenticated == true;

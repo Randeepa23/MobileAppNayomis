@@ -23,15 +23,43 @@ import 'main_shell.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
+class AppRouterNotifier extends ChangeNotifier {
+  AppRouterNotifier(this._ref) {
+    _ref.listen<AsyncValue<AuthState>>(authControllerProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+  final Ref _ref;
+}
+
+bool _splashShown = false;
+
+bool isSplashShown() => _splashShown;
+
+void markSplashCompleted() {
+  _splashShown = true;
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
+  final notifier = AppRouterNotifier(ref);
+  ref.onDispose(notifier.dispose);
+
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/splash',
+    initialLocation: _splashShown ? '/login' : '/splash',
+    refreshListenable: notifier,
     redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
+      final authenticated = auth.value?.isAuthenticated == true;
+
+      // The splash screen only appears on initial cold app launch
       if (state.matchedLocation == '/splash') {
-        return null;
+        if (_splashShown) {
+          return authenticated ? '/home' : '/login';
+        }
+        return null; // show splash on first app open
       }
+
       final protected =
           state.matchedLocation == '/profile' ||
           state.matchedLocation == '/orders' ||
@@ -39,7 +67,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/checkout' ||
           state.matchedLocation.startsWith('/tracking') ||
           state.matchedLocation == '/notifications';
-      final authenticated = auth.value?.isAuthenticated == true;
+
       if (protected && auth.hasValue && !authenticated) {
         return '/login?from=' + Uri.encodeComponent(state.uri.toString());
       }

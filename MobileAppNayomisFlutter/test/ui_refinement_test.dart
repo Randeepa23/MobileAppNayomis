@@ -81,6 +81,7 @@ void main() {
   });
 
   testWidgets('app router starts directly on login', (tester) async {
+    markSplashCompleted();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -148,7 +149,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Create your account'), findsOneWidget);
-    expect(find.byType(TextFormField), findsNWidgets(4));
+    expect(find.byType(TextFormField), findsNWidgets(5));
     expect(find.text('Create account'), findsOneWidget);
   });
 
