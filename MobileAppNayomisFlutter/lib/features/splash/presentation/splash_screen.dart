@@ -34,63 +34,64 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
 
-    // 3-second duration for clean in, hold/breathe, and out transitions
+    // 3.6-second duration for slow, luxurious out-to-in entrance, hold, and exit
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 3600),
     );
 
-    // In-transition (0s to 1.3s -> 0.0 to 0.26)
+    // Smooth entrance fade-in (0.0 to 0.45)
     _fadeIn = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.26, curve: Curves.easeOutCubic),
+      curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
     );
 
-    _scaleIn = Tween<double>(begin: 0.70, end: 1.0).animate(
+    // Slow out-to-in scale (starts expanded at 1.25 and glides inward to 1.0)
+    _scaleIn = Tween<double>(begin: 1.25, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.28, curve: Curves.easeOutBack),
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
       ),
     );
 
     _slideIn = Tween<Offset>(
-      begin: const Offset(0, 0.12),
+      begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.26, curve: Curves.easeOutCubic),
+        curve: const Interval(0.0, 0.50, curve: Curves.easeOutCubic),
       ),
     );
 
-    // Subtitle & Branding text fade-in (0.8s to 1.8s -> 0.16 to 0.36)
+    // Title branding fade & glide in
     _textFadeIn = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.16, 0.36, curve: Curves.easeOut),
+      curve: const Interval(0.12, 0.50, curve: Curves.easeOut),
     );
 
     _textSlideIn = Tween<Offset>(
-      begin: const Offset(0, 0.25),
+      begin: const Offset(0, 0.15),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.16, 0.36, curve: Curves.easeOutCubic),
+        curve: const Interval(0.12, 0.50, curve: Curves.easeOutCubic),
       ),
     );
 
-    // Out-transition (4.1s to 5.0s -> 0.82 to 1.0)
+    // Out-transition (0.85 to 1.0)
     _fadeOut = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.82, 1.0, curve: Curves.easeInOutCubic),
+        curve: const Interval(0.85, 1.0, curve: Curves.easeInOutCubic),
       ),
     );
 
-    _scaleOut = Tween<double>(begin: 1.0, end: 1.10).animate(
+    _scaleOut = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.82, 1.0, curve: Curves.easeInOutCubic),
+        curve: const Interval(0.85, 1.0, curve: Curves.easeInOutCubic),
       ),
     );
 
@@ -141,10 +142,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             final currentOpacity = (_fadeIn.value * _fadeOut.value).clamp(0.0, 1.0);
             final currentScale = _scaleIn.value * _scaleOut.value;
 
-            // Subtle gentle breathing pulse during the hold phase (1.3s to 4.1s)
+            // Subtle gentle breathing pulse during the settled hold phase
             final progress = _controller.value;
-            final breathe = (progress > 0.26 && progress < 0.82)
-                ? math.sin((progress - 0.26) / (0.82 - 0.26) * math.pi * 3) * 0.02
+            final breathe = (progress > 0.50 && progress < 0.85)
+                ? math.sin((progress - 0.50) / (0.85 - 0.50) * math.pi * 2) * 0.015
                 : 0.0;
 
             return Container(
@@ -233,7 +234,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                               const SizedBox(height: 28),
 
-                              // Animated Branding Title in Cambria
+                              // Animated Branding Title in original modern bold typeface
                               FadeTransition(
                                 opacity: _textFadeIn,
                                 child: SlideTransition(
@@ -242,14 +243,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                     "NAYOMI'S WATERFRONT",
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontFamily: 'Cambria',
-                                      fontFamilyFallback: [
-                                        'Georgia',
-                                        'Times New Roman',
-                                        'serif',
-                                      ],
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
                                       letterSpacing: 2.5,
                                       color: AppColors.textPrimary,
                                     ),
