@@ -233,48 +233,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                               const SizedBox(height: 28),
 
-                              // Animated Branding Text & Taglines
+                              // Animated Branding Title in Cambria
                               FadeTransition(
                                 opacity: _textFadeIn,
                                 child: SlideTransition(
                                   position: _textSlideIn,
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        "NAYOMI'S WATERFRONT",
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 2.5,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.brandPrimary.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(
-                                            color: AppColors.brandPrimary.withValues(alpha: 0.18),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          "Smart Food Delivery • School Breakfast",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.4,
-                                            color: AppColors.brandPrimaryDark,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  child: const Text(
+                                    "NAYOMI'S WATERFRONT",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Cambria',
+                                      fontFamilyFallback: [
+                                        'Georgia',
+                                        'Times New Roman',
+                                        'serif',
+                                      ],
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2.5,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -286,37 +264,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                     // Elegant subtle loading progress bar at bottom
                     Positioned(
-                      bottom: 40,
+                      bottom: 48,
                       child: Opacity(
                         opacity: currentOpacity,
-                        child: Column(
-                          children: [
-                            // Sleek micro-progress track
-                            SizedBox(
-                              width: 130,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(3),
-                                child: LinearProgressIndicator(
-                                  value: _controller.value,
-                                  minHeight: 2.5,
-                                  backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.12),
-                                  valueColor: const AlwaysStoppedAnimation<Color>(
-                                    AppColors.brandPrimary,
-                                  ),
-                                ),
+                        child: SizedBox(
+                          width: 140,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: _controller.value,
+                              minHeight: 2.5,
+                              backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.12),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.brandPrimary,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "Loading fresh experience...",
-                              style: TextStyle(
-                                fontSize: 11,
-                                letterSpacing: 0.8,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
