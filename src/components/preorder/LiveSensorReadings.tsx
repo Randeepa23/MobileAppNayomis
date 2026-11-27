@@ -243,27 +243,122 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
               </Badge>
             </div>
 
-            {/* 4 Essential Food Condition Cards */}
+            {/* All Sensor Reading Telemetry Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ReadingCard icon={Thermometer} label="Food Temperature">
                 <span className="text-orange-600 font-bold text-lg">{numeric(latest.temperature_c, 1, ' °C')}</span>
-                <p className="text-xs font-normal text-emerald-700 mt-0.5">Optimal Warm Zone</p>
+                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.temperature_condition || 'Safe Hot-Holding Zone'}</p>
               </ReadingCard>
-              <ReadingCard icon={Flame} label="Food Freshness">
-                <span className="font-bold text-lg text-emerald-700">100% Fresh</span>
-                <p className="text-xs font-normal text-emerald-700 mt-0.5">Safe Quality Verified</p>
+              <ReadingCard icon={Droplets} label="Box Humidity">
+                <span className="font-bold text-lg">{numeric(latest.humidity_percent, 1, ' %')}</span>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">Optimal Freshness Moisture</p>
+              </ReadingCard>
+              <ReadingCard icon={Flame} label="Freshness & Gas Sensor">
+                <span className="font-bold text-lg">{latest.gas_raw != null ? `${latest.gas_raw} (ADC)` : NA}</span>
+                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.gas_condition || 'Fresh • No Spoilage VOCs'}</p>
               </ReadingCard>
               <ReadingCard icon={Box} label="Container Lid Seal">
                 <span className={`font-bold text-lg ${latest.box_open ? 'text-red-600' : 'text-emerald-700'}`}>
-                  {latest.box_open ? 'Opened' : 'Securely Sealed'}
+                  {latest.box_open ? 'Lid Opened' : 'Securely Sealed'}
                 </span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">{latest.box_open ? 'Lid Alert' : 'Tamper-Proof'}</p>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.box_condition || 'Tamper-Proof'}</p>
               </ReadingCard>
-              <ReadingCard icon={Activity} label="Transport Handling">
-                <span className="font-bold text-lg text-blue-700">{motion(latest.motion_detected)}</span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">Smooth Transit</p>
+              <ReadingCard icon={MapPinned} label="Delivery Box Situated At">
+                <span className="font-bold text-sm text-gray-900 block truncate">
+                  {latestData?.box_location?.place_name || 'En Route to School'}
+                </span>
+                {latest.latitude != null && latest.longitude != null && (
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    <span className="text-xs text-gray-500 font-mono">{`${numeric(latest.latitude, 4)}, ${numeric(latest.longitude, 4)}`}</span>
+                    <a
+                      href={`https://maps.google.com/?q=${latest.latitude},${latest.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-orange-600 underline hover:text-orange-800"
+                    >
+                      View Live Map ↗
+                    </a>
+                  </div>
+                )}
+              </ReadingCard>
+              <ReadingCard icon={Activity} label="Motion / Transit Handling">
+                <span className="font-bold text-sm">{motion(latest.motion_detected)}</span>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.motion_condition || 'Smooth Transport'}</p>
+              </ReadingCard>
+              {latest.battery_percent !== null && (
+                <ReadingCard icon={Battery} label="Smart Box Battery">
+                  <span className="font-bold text-lg text-emerald-700">{numeric(latest.battery_percent, 1, ' %')}</span>
+                  <p className="text-xs font-normal text-gray-500 mt-0.5">ESP32 IoT Unit</p>
+                </ReadingCard>
+              )}
+              <ReadingCard icon={Wifi} label="IoT Connection">
+                <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                <p className="text-xs font-normal text-gray-500 mt-0.5">Updated: {timestamp(latest.received_at)}</p>
               </ReadingCard>
             </div>
+
+            {/* Reading History Table */}
+            <Card className="border-orange-200">
+              <CardHeader>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <CardTitle className="text-xl text-gray-900">Reading history</CardTitle>
+                  {pagination && <span className="text-sm text-gray-500">{pagination.total} readings</span>}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table className="min-w-[1150px]">
+                    <TableHeader>
+                      <TableRow className="bg-orange-50">
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead>Temperature</TableHead>
+                        <TableHead>Humidity</TableHead>
+                        <TableHead>Gas (ADC)</TableHead>
+                        <TableHead>Box Latitude</TableHead>
+                        <TableHead>Box Longitude</TableHead>
+                        <TableHead>Motion status</TableHead>
+                        <TableHead>Box-open status</TableHead>
+                        <TableHead>Battery</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {!history.length ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="h-24 text-center text-gray-500">
+                            No sensor reading history is available yet.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        history.map((reading) => (
+                          <TableRow key={reading.id}>
+                            <TableCell className="whitespace-nowrap">{timestamp(reading.received_at)}</TableCell>
+                            <TableCell>{numeric(reading.temperature_c, 1, ' °C')}</TableCell>
+                            <TableCell>{numeric(reading.humidity_percent, 1, ' %')}</TableCell>
+                            <TableCell>{reading.gas_raw != null ? reading.gas_raw : NA}</TableCell>
+                            <TableCell>{numeric(reading.latitude, 6)}</TableCell>
+                            <TableCell>{numeric(reading.longitude, 6)}</TableCell>
+                            <TableCell>{motion(reading.motion_detected)}</TableCell>
+                            <TableCell>{boxState(reading.box_open)}</TableCell>
+                            <TableCell>{numeric(reading.battery_percent, 1, ' %')}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                {pagination && pagination.total_pages > 1 && (
+                  <div className="mt-4 flex items-center justify-end gap-3">
+                    <Button variant="outline" size="sm" disabled={page <= 1 || loadingReadings} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                      Previous
+                    </Button>
+                    <span className="text-sm text-gray-600">Page {pagination.page} of {pagination.total_pages}</span>
+                    <Button variant="outline" size="sm" disabled={page >= pagination.total_pages || loadingReadings} onClick={() => setPage((value) => value + 1)}>
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </>
         }
       </>
