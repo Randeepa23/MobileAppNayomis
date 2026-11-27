@@ -1,4 +1,12 @@
 import { Food } from '@/types';
+import fishRollImg from '@/assets/Fish Roll.webp';
+import fishBunImg from '@/assets/fish bun.jpg';
+import fishPastryImg from '@/assets/fish pastry.jpg';
+import chickenBurgerImg from '@/assets/chicken burger.jpg';
+import chickenPastryImg from '@/assets/chicken pastry.jpg';
+import sausagePastryImg from '@/assets/sausage pastry.jpg';
+import seeniSambolBunImg from '@/assets/seenisambol bun.jpg';
+import teaBunImg from '@/assets/tea bun.jpg';
 
 // Extended Food interface for menu display
 export interface MenuFood extends Omit<Food, '_id' | 'createdAt' | 'updatedAt'> {
@@ -14,7 +22,7 @@ export const menuItems: MenuFood[] = [
     category: 'Rolls',
     description: 'Crispy, golden-fried roll filled with spiced fish and aromatic Sri Lankan herbs',
     available: true,
-    image: '/src/assets/Fish Roll.webp',
+    image: fishRollImg,
     badge: 'Popular'
   },
   {
@@ -23,7 +31,7 @@ export const menuItems: MenuFood[] = [
     category: 'Buns',
     description: 'Soft, fluffy bun stuffed with deliciously seasoned fish filling',
     available: true,
-    image: '/src/assets/fish bun.jpg',
+    image: fishBunImg,
     badge: 'Popular'
   },
   {
@@ -32,7 +40,7 @@ export const menuItems: MenuFood[] = [
     category: 'Pastries',
     description: 'Flaky pastry pocket filled with savory fish mixture and spices',
     available: true,
-    image: '/src/assets/fish pastry.jpg'
+    image: fishPastryImg
   },
   {
     name: 'Chicken Burger',
@@ -40,7 +48,7 @@ export const menuItems: MenuFood[] = [
     category: 'Burgers',
     description: 'Juicy chicken patty with fresh vegetables and special sauce in a toasted bun',
     available: true,
-    image: '/src/assets/chicken burger.jpg',
+    image: chickenBurgerImg,
     badge: 'New'
   },
   {
@@ -49,7 +57,7 @@ export const menuItems: MenuFood[] = [
     category: 'Pastries',
     description: 'Golden pastry filled with tender chicken and aromatic spices',
     available: true,
-    image: '/src/assets/chicken pastry.jpg'
+    image: chickenPastryImg
   },
   {
     name: 'Sausage Pastry',
@@ -57,7 +65,7 @@ export const menuItems: MenuFood[] = [
     category: 'Pastries',
     description: 'Buttery pastry with succulent sausage and herbs',
     available: true,
-    image: '/src/assets/sausage pastry.jpg'
+    image: sausagePastryImg
   },
   {
     name: 'Seeni Sambol Bun',
@@ -65,7 +73,7 @@ export const menuItems: MenuFood[] = [
     category: 'Buns',
     description: 'Traditional Sri Lankan sweet and spicy caramelized onion filling in a soft bun',
     available: true,
-    image: '/src/assets/seenisambol bun.jpg',
+    image: seeniSambolBunImg,
     badge: 'Popular'
   },
   {
@@ -74,6 +82,6 @@ export const menuItems: MenuFood[] = [
     category: 'Buns',
     description: 'Classic sweet bun perfect for pairing with Ceylon tea',
     available: true,
-    image: '/src/assets/tea bun.jpg'
+    image: teaBunImg
   }
 ];

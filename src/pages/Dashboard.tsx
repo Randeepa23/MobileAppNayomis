@@ -12,6 +12,7 @@ import { LoyaltyProgram } from '@/components/dashboard/LoyaltyProgram';
 import { Favorites } from '@/components/dashboard/Favorites';
 import { NotificationSettings } from '@/components/dashboard/NotificationSettings';
 import Hero from '@/components/Hero';
+import heroLogoImg from '@/assets/herologo.png';
 
 export type DashboardSection = 'overview' | 'profile' | 'orders' | 'loyalty' | 'favorites' | 'notifications';
 
@@ -104,7 +105,7 @@ const Dashboard = () => {
                   <div className="absolute -inset-1 bg-gradient-to-r from-orange-300 via-amber-300 to-orange-300 rounded-2xl blur-md opacity-40 group-hover:opacity-70 transition duration-300"></div>
                   <div className="relative bg-white p-2 rounded-2xl shadow-md border-2 border-orange-300/70">
                     <img 
-                      src="/src/assets/herologo.png" 
+                      src={heroLogoImg} 
                       alt="Nayomi's" 
                       className="h-10 w-auto object-contain"
                       onError={(e) => {
