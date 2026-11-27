@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design_system/app_colors.dart';
 import '../application/tracking_providers.dart';
@@ -8,6 +9,29 @@ import '../application/tracking_providers.dart';
 class TrackingScreen extends ConsumerWidget {
   const TrackingScreen({super.key, required this.orderId});
   final String orderId;
+
+  Future<void> _launchGoogleMaps(double? lat, double? lng) async {
+    final targetLat = lat ?? 7.2115;
+    final targetLng = lng ?? 79.8398;
+    final googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$targetLat,$targetLng');
+    try {
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(googleMapsUrl);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _makeCall(String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    final callUri = Uri.parse('tel:$cleanPhone');
+    try {
+      if (await canLaunchUrl(callUri)) {
+        await launchUrl(callUri);
+      }
+    } catch (_) {}
+  }
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
@@ -224,23 +248,27 @@ class TrackingScreen extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.green.shade200),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.phone, size: 14, color: Colors.green),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    driver?.phone ?? '+94 77 123 4567',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
-                                  ),
-                                ],
+                            InkWell(
+                              onTap: () => _makeCall(driver?.phone ?? '+94 77 123 4567'),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.shade200),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.phone, size: 14, color: Colors.green),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      driver?.phone ?? '+94 77 123 4567',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -302,6 +330,25 @@ class TrackingScreen extends ConsumerWidget {
                               Text(
                                 snapshot.boxLocation?.description ?? 'Current Van Position: Approaching school via Negombo Waterfront corridor.',
                                 style: const TextStyle(fontSize: 11, color: Colors.black87),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
+                                  icon: const Icon(Icons.navigation_rounded, size: 18),
+                                  label: const Text(
+                                    'Track Driver Live on Google Maps',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade700,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    elevation: 1,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -423,6 +470,23 @@ class TrackingScreen extends ConsumerWidget {
                                     ),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
+                                  icon: const Icon(Icons.near_me_rounded, size: 18, color: AppColors.primary),
+                                  label: const Text(
+                                    'View Delivery Box on Google Maps',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                ),
                               ),
                             ],
                           ),

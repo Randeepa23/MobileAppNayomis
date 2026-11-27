@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/persistence/app_database.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../authentication/application/auth_controller.dart';
 import '../../cart/application/cart_controller.dart';
-import '../../../core/persistence/app_database.dart';
 import '../application/checkout_providers.dart';
 import '../data/checkout_repository.dart';
 

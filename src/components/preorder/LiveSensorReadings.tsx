@@ -239,6 +239,21 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                     </div>
                   </div>
                 </div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-blue-100 pt-3">
+                  <div className="flex items-center gap-2 text-xs text-blue-900 font-medium">
+                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Van Position: {latestData?.box_location?.place_name || 'En Route to Ave Maria Convent, Negombo'}
+                  </div>
+                  <a
+                    href={`https://maps.google.com/?q=${latest.latitude || 7.2115},${latest.longitude || 79.8398}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+                  >
+                    <MapPinned className="h-3.5 w-3.5" />
+                    Open Driver Location in Google Maps ↗
+                  </a>
+                </div>
               </CardContent>
             </Card>
 
