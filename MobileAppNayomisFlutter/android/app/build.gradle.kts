@@ -51,7 +51,8 @@ android {
 
     buildTypes {
         release {
-            // Production signing is configured outside source control when approved.
+            // Allows sideloading and installing the release APK directly on devices
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
