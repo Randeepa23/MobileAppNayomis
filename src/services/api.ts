@@ -214,6 +214,13 @@ class ApiService {
     return this.request<{ students: Student[] }>('/admin/students');
   }
 
+  async updateStudentByAdmin(studentId: string, updates: Partial<Student>): Promise<ApiResponse<{ student: Student }>> {
+    return this.request<{ student: Student }>(`/admin/students/${studentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
   async getAllOrders(): Promise<ApiResponse<{ orders: Order[] }>> {
     return this.request<{ orders: Order[] }>('/admin/orders');
   }

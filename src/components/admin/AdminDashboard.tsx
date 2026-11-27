@@ -48,6 +48,8 @@ export const AdminDashboard: React.FC = () => {
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [foodSearchQuery, setFoodSearchQuery] = useState('');
+  const [editingStudent, setEditingStudent] = useState<{ id: string; name: string; phone: string } | null>(null);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [newFood, setNewFood] = useState({
     name: '',
     price: '',
@@ -73,6 +75,40 @@ export const AdminDashboard: React.FC = () => {
       title: 'Dashboard Refreshed',
       description: 'Synchronized latest orders, fleet, and safety telemetry.',
     });
+  };
+
+  const handleSaveStudentPhone = async () => {
+    if (!editingStudent) return;
+    try {
+      setIsEditingPhone(true);
+      const res = await apiService.updateStudentByAdmin(editingStudent.id, {
+        phone: editingStudent.phone.trim(),
+        telephone: editingStudent.phone.trim(),
+        whatsapp: editingStudent.phone.trim(),
+      } as any);
+      if (res.success) {
+        toast({
+          title: "Telephone updated",
+          description: `Updated telephone number for ${editingStudent.name}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-students'] });
+        setEditingStudent(null);
+      } else {
+        toast({
+          title: "Update failed",
+          description: res.message || "Could not update phone number",
+          variant: "destructive",
+        });
+      }
+    } catch (e: any) {
+      toast({
+        title: "Update failed",
+        description: e.message || "Could not update phone number",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingPhone(false);
+    }
   };
 
   // Fetch dashboard stats
@@ -913,10 +949,24 @@ export const AdminDashboard: React.FC = () => {
                             <TableCell className="font-medium text-slate-900">{student.name || 'Student'}</TableCell>
                             <TableCell className="text-xs text-slate-600 font-mono">{student.email || 'N/A'}</TableCell>
                             <TableCell className="text-xs text-slate-700 font-mono">
-                              <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-700">
-                                <Phone className="h-3 w-3 text-slate-400" />
-                                {student.phone || (student as any).telephone || (student as any).whatsapp || 'N/A'}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                  <Phone className="h-3 w-3 text-slate-400" />
+                                  {student.phone || (student as any).telephone || (student as any).whatsapp || 'N/A'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingStudent({
+                                    id: student._id,
+                                    name: student.name || 'Student',
+                                    phone: student.phone || (student as any).telephone || (student as any).whatsapp || '',
+                                  })}
+                                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors"
+                                  title="Edit phone number"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </button>
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs text-slate-700">
                               <div className="font-medium">{(student as any).school || 'Registered School'}</div>
@@ -1110,6 +1160,36 @@ export const AdminDashboard: React.FC = () => {
               className="bg-orange-600 hover:bg-orange-700"
             >
               {addFoodMutation.isPending ? 'Saving...' : 'Add Item'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student Phone Edit Dialog */}
+      <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Telephone Number</DialogTitle>
+            <DialogDescription>
+              Set or update customer contact telephone number for {editingStudent?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Telephone / Phone Number</label>
+            <Input
+              type="tel"
+              placeholder="e.g. +94 77 123 4567"
+              value={editingStudent?.phone || ''}
+              onChange={(e) => setEditingStudent((prev) => prev ? { ...prev, phone: e.target.value } : null)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingStudent(null)} disabled={isEditingPhone}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveStudentPhone} disabled={isEditingPhone} className="bg-blue-600 hover:bg-blue-700">
+              {isEditingPhone ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Telephone
             </Button>
           </DialogFooter>
         </DialogContent>

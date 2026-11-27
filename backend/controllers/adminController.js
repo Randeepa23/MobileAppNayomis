@@ -157,9 +157,35 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+const updateStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { phone, telephone, whatsapp, name, school, grade } = req.body;
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    const phoneVal = phone !== undefined ? phone : (telephone !== undefined ? telephone : whatsapp);
+    if (phoneVal !== undefined) {
+      const cleanPhone = typeof phoneVal === 'string' ? phoneVal.trim() : '';
+      student.phone = cleanPhone;
+      student.telephone = cleanPhone;
+      student.whatsapp = cleanPhone;
+    }
+    if (name) student.name = name.trim();
+    if (school !== undefined) student.school = school.trim();
+    if (grade !== undefined) student.grade = grade.trim();
+    await student.save();
+    return res.json({ success: true, message: 'Student updated successfully', data: { student } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   adminLogin,
   getAllStudents,
+  updateStudent,
   getAllOrders,
   getLoyaltyPointsReport,
   getAllReviews,
