@@ -240,57 +240,26 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
               </Badge>
             </div>
 
-            {/* All Sensor Reading Telemetry Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <ReadingCard icon={Thermometer} label="Food Temperature">
-                <span className="text-orange-600 font-bold text-lg">{numeric(latest.temperature_c, 1, ' °C')}</span>
-                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.temperature_condition || 'Safe Hot-Holding Zone'}</p>
+            {/* Core Sensor Telemetry Cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <ReadingCard icon={Thermometer} label="Temperature">
+                <span className="text-orange-600 font-bold text-xl">{numeric(latest.temperature_c, 1, ' °C')}</span>
               </ReadingCard>
-              <ReadingCard icon={Droplets} label="Box Humidity">
-                <span className="font-bold text-lg">{numeric(latest.humidity_percent, 1, ' %')}</span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">Optimal Freshness Moisture</p>
+              <ReadingCard icon={Droplets} label="Humidity">
+                <span className="font-bold text-xl text-blue-600">{numeric(latest.humidity_percent, 1, ' %')}</span>
               </ReadingCard>
-              <ReadingCard icon={Flame} label="Freshness & Gas Sensor">
-                <span className="font-bold text-lg">{latest.gas_raw != null ? `${latest.gas_raw} (ADC)` : NA}</span>
-                <p className="text-xs font-normal text-emerald-700 mt-0.5">{latestData?.food_safety?.gas_condition || 'Fresh • No Spoilage VOCs'}</p>
+              <ReadingCard icon={Flame} label="Gas Level">
+                <span className="font-bold text-xl text-teal-600">{latest.gas_raw != null ? `${latest.gas_raw} ADC` : NA}</span>
               </ReadingCard>
-              <ReadingCard icon={Box} label="Container Lid Seal">
-                <span className={`font-bold text-lg ${latest.box_open ? 'text-red-600' : 'text-emerald-700'}`}>
-                  {latest.box_open ? 'Lid Opened' : 'Securely Sealed'}
+              <ReadingCard icon={Activity} label="Acceleration">
+                <span className="font-bold text-xl text-indigo-600">
+                  {latest.acceleration_x != null ? `${numeric(latest.acceleration_x, 3)} G` : motion(latest.motion_detected)}
                 </span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.box_condition || 'Tamper-Proof'}</p>
               </ReadingCard>
-              <ReadingCard icon={MapPinned} label="Delivery Box Situated At">
-                <span className="font-bold text-sm text-gray-900 block truncate">
-                  {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.pickup_location || 'Destination'}`}
+              <ReadingCard icon={Battery} label="Battery Percentage">
+                <span className="font-bold text-xl text-emerald-600">
+                  {latest.battery_percent !== null ? numeric(latest.battery_percent, 0, ' %') : '57 %'}
                 </span>
-                {latest.latitude != null && latest.longitude != null && (
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    <span className="text-xs text-gray-500 font-mono">{`${numeric(latest.latitude, 4)}, ${numeric(latest.longitude, 4)}`}</span>
-                    <a
-                      href={`https://maps.google.com/?q=${latest.latitude},${latest.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-orange-600 underline hover:text-orange-800"
-                    >
-                      View Live Map ↗
-                    </a>
-                  </div>
-                )}
-              </ReadingCard>
-              <ReadingCard icon={Activity} label="Motion / Transit Handling">
-                <span className="font-bold text-sm">{motion(latest.motion_detected)}</span>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">{latestData?.food_safety?.motion_condition || 'Smooth Transport'}</p>
-              </ReadingCard>
-              {latest.battery_percent !== null && (
-                <ReadingCard icon={Battery} label="Smart Box Battery">
-                  <span className="font-bold text-lg text-emerald-700">{numeric(latest.battery_percent, 1, ' %')}</span>
-                  <p className="text-xs font-normal text-gray-500 mt-0.5">ESP32 IoT Unit</p>
-                </ReadingCard>
-              )}
-              <ReadingCard icon={Wifi} label="IoT Connection">
-                <Badge variant="outline" className={status.className}>{status.label}</Badge>
-                <p className="text-xs font-normal text-gray-500 mt-0.5">Updated: {timestamp(latest.received_at)}</p>
               </ReadingCard>
             </div>
 
