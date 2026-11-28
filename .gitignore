@@ -30,6 +30,10 @@ backend/.env.local
 *firebase-service-account*.json
 backend/config/firebase-service-account.json
 
+# Android releases
+*.apk
+Latest_app_release/
+
 # Local publishing workspace and generated files
 .publish/
 *.tsbuildinfo
