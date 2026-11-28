@@ -237,11 +237,15 @@ const updateStudentProfile = async (req, res) => {
 
 const updateFcmToken = async (req, res) => {
   try {
-    const studentId = req.student?.id || req.student?._id;
+    const studentId = req.customer?.studentId || req.customer?.driverId || req.customer?.id;
     const { token, platform } = req.body;
 
     if (!token || typeof token !== 'string') {
       return res.status(400).json({ success: false, message: 'FCM token is required.' });
+    }
+
+    if (!studentId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
     const student = await Student.findByIdAndUpdate(
