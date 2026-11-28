@@ -2,17 +2,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../app/router/app_router.dart';
-import '../../../core/design_system/app_colors.dart';
 import '../../authentication/presentation/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget? targetScreen;
+  final String title;
   final String subtitle;
 
   const SplashScreen({
     super.key,
     this.targetScreen,
-    this.subtitle = "Nayomi's Waterfront • Smart Food Delivery",
+    this.title = "NAYOMI'S WATERFRONT",
+    this.subtitle = "Smart Food Delivery • Fresh & Safe",
   });
 
   @override
@@ -23,15 +24,14 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Entrance animations (0.0 -> 0.40, ~0s to 1.5s)
-  late final Animation<double> _logoFadeIn;
-  late final Animation<double> _logoScaleIn;
-  late final Animation<double> _textFadeIn;
-  late final Animation<Offset> _textSlideIn;
+  // Entrance animations
+  late final Animation<double> _logoFade;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _textFade;
+  late final Animation<Offset> _textSlide;
 
-  // Smooth exit animations (0.85 -> 1.0, ~3.2s to 3.8s)
-  late final Animation<double> _fadeOut;
-  late final Animation<double> _scaleOut;
+  // Exit transition
+  late final Animation<double> _exitFade;
 
   Timer? _fallbackTimer;
   bool _hasNavigated = false;
@@ -40,33 +40,33 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // 3.8-second luxurious total duration for a calm, premium brand entrance & hold
+    // 3.2-second total duration: 1.2s entrance, 1.4s comfortable hold, 0.6s smooth exit
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3800),
+      duration: const Duration(milliseconds: 3200),
     );
 
-    // 1. Logo Entrance (0.0 to 0.40)
-    _logoFadeIn = CurvedAnimation(
+    // 1. Logo Entrance (0.0 to 0.40) - Smooth, natural ease-out
+    _logoFade = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.40, curve: Curves.easeOutCubic),
+      curve: const Interval(0.0, 0.38, curve: Curves.easeOutCubic),
     );
 
-    _logoScaleIn = Tween<double>(begin: 0.85, end: 1.0).animate(
+    _logoScale = Tween<double>(begin: 0.88, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
+        curve: const Interval(0.0, 0.42, curve: Curves.easeOutCubic),
       ),
     );
 
-    // 2. Subtitle / Label Stagger (0.25 to 0.55)
-    _textFadeIn = CurvedAnimation(
+    // 2. Text Branding Stagger (0.25 to 0.55)
+    _textFade = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.25, 0.55, curve: Curves.easeOut),
     );
 
-    _textSlideIn = Tween<Offset>(
-      begin: const Offset(0.0, 0.25),
+    _textSlide = Tween<Offset>(
+      begin: const Offset(0.0, 0.20),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
@@ -75,15 +75,8 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // 3. Out-Transition (0.85 to 1.0)
-    _fadeOut = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.85, 1.0, curve: Curves.easeInOutCubic),
-      ),
-    );
-
-    _scaleOut = Tween<double>(begin: 1.0, end: 1.04).animate(
+    // 3. Clean Exit Fade (0.85 to 1.0)
+    _exitFade = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.85, 1.0, curve: Curves.easeInOutCubic),
@@ -99,8 +92,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Safety fallback Timer (4200ms)
-    _fallbackTimer = Timer(const Duration(milliseconds: 4200), () {
+    // Safety fallback timer (3600ms)
+    _fallbackTimer = Timer(const Duration(milliseconds: 3600), () {
       _navigateToNext();
     });
   }
@@ -116,7 +109,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 450),
+        transitionDuration: const Duration(milliseconds: 400),
         pageBuilder: (context, animation, secondaryAnimation) => destination,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
@@ -141,59 +134,32 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: Colors.white,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _navigateToNext, // Tap anywhere to skip instantly
+        onTap: _navigateToNext, // Instant tap-to-skip
         child: AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
-            // Composite opacity: in (0->1), hold (1.0), out (1->0)
-            final currentOpacity = (_logoFadeIn.value * _fadeOut.value).clamp(0.0, 1.0);
-            final currentScale = _logoScaleIn.value * _scaleOut.value;
-            final textOpacity = (_textFadeIn.value * _fadeOut.value).clamp(0.0, 1.0);
+            final logoOpacity = (_logoFade.value * _exitFade.value).clamp(0.0, 1.0);
+            final textOpacity = (_textFade.value * _exitFade.value).clamp(0.0, 1.0);
 
             return SafeArea(
               child: Stack(
-                alignment: Alignment.center,
                 children: [
-                  // Subtle ambient brand warmth behind the logo
-                  Opacity(
-                    opacity: currentOpacity * 0.7,
-                    child: Container(
-                      width: 280,
-                      height: 280,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.brandPrimary.withValues(alpha: 0.12),
-                            blurRadius: 80,
-                            spreadRadius: 25,
-                          ),
-                          BoxShadow(
-                            color: AppColors.brandAccent.withValues(alpha: 0.08),
-                            blurRadius: 100,
-                            spreadRadius: 35,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Centered brand logo (Ultra-HD, High filter quality)
+                  // 1. Centered Pristine Transparent Brand Logo
                   Center(
                     child: Opacity(
-                      opacity: currentOpacity,
+                      opacity: logoOpacity,
                       child: Transform.scale(
-                        scale: currentScale,
+                        scale: _logoScale.value,
                         child: Image.asset(
                           'assets/logo.png',
-                          width: 250,
+                          width: 230,
                           fit: BoxFit.contain,
                           filterQuality: FilterQuality.high,
                           isAntiAlias: true,
                           errorBuilder: (context, error, stackTrace) {
                             return Image.asset(
                               'assets/branding/nayomis-logo.png',
-                              width: 250,
+                              width: 230,
                               fit: BoxFit.contain,
                               filterQuality: FilterQuality.high,
                               isAntiAlias: true,
@@ -204,43 +170,38 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  // Bottom subtitle / app label positioned bottom: 36 inside SafeArea
+                  // 2. Elegant Minimalist Bottom Branding (Clean, Apple/Uber-style)
                   Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 36,
+                    left: 24,
+                    right: 24,
+                    bottom: 40,
                     child: Center(
                       child: Opacity(
                         opacity: textOpacity,
                         child: SlideTransition(
-                          position: _textSlideIn,
+                          position: _textSlide,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                widget.subtitle,
+                                widget.title,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
-                                  color: Colors.black54,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2.2,
+                                  color: Color(0xFF1E293B),
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              // Sleek micro-indicator indicating load progress
-                              SizedBox(
-                                width: 100,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(2),
-                                  child: LinearProgressIndicator(
-                                    value: _controller.value,
-                                    minHeight: 2.0,
-                                    backgroundColor: Colors.black.withValues(alpha: 0.06),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(
-                                      AppColors.brandPrimary,
-                                    ),
-                                  ),
+                              const SizedBox(height: 6),
+                              Text(
+                                widget.subtitle,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0.8,
+                                  color: const Color(0xFF64748B).withValues(alpha: 0.9),
                                 ),
                               ),
                             ],
