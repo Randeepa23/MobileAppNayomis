@@ -139,6 +139,10 @@ class LiveSensorSnapshot {
     this.motionDetected,
     this.boxOpen,
     this.batteryPercent,
+    this.batteryVoltage,
+    this.shockG,
+    this.vibrationRMS,
+    this.readingId,
     this.receivedAt,
     this.driver,
     this.foodSafety,
@@ -159,6 +163,10 @@ class LiveSensorSnapshot {
   final bool? motionDetected;
   final bool? boxOpen;
   final double? batteryPercent;
+  final double? batteryVoltage;
+  final double? shockG;
+  final double? vibrationRMS;
+  final String? readingId;
   final DateTime? receivedAt;
   final DriverInfo? driver;
   final FoodSafetyInfo? foodSafety;
@@ -193,6 +201,10 @@ class LiveSensorSnapshot {
       motionDetected: rawLatest?['motion_detected'] as bool?,
       boxOpen: rawLatest?['box_open'] as bool?,
       batteryPercent: (rawLatest?['battery_percent'] as num?)?.toDouble(),
+      batteryVoltage: (rawLatest?['battery_voltage'] as num?)?.toDouble(),
+      shockG: (rawLatest?['shock_g'] as num?)?.toDouble(),
+      vibrationRMS: (rawLatest?['vibration_rms'] as num?)?.toDouble(),
+      readingId: rawLatest?['reading_id']?.toString() ?? rawLatest?['observation_id']?.toString(),
       receivedAt: rxTime,
       driver: rawDriver != null ? DriverInfo.fromApi(rawDriver) : null,
       foodSafety: rawSafety != null ? FoodSafetyInfo.fromApi(rawSafety) : null,
