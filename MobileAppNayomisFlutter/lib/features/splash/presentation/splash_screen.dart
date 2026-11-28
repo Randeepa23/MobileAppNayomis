@@ -1,128 +1,119 @@
-import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_router.dart';
-import '../../../core/assets/app_assets.dart';
-import '../../../core/design_system/app_colors.dart';
-import '../../authentication/application/auth_controller.dart';
+import '../../authentication/presentation/login_screen.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
-  const SplashScreen({super.key});
+class SplashScreen extends StatefulWidget {
+  final Widget? targetScreen;
+  final String subtitle;
+
+  const SplashScreen({
+    super.key,
+    this.targetScreen,
+    this.subtitle = "Nayomi's Waterfront • Smart Food Delivery",
+  });
 
   @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen>
+class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _fadeIn;
-  late final Animation<double> _scaleIn;
-  late final Animation<Offset> _slideIn;
+  late final Animation<double> _logoFade;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _textFade;
+  late final Animation<Offset> _textSlide;
 
-  late final Animation<double> _textFadeIn;
-  late final Animation<Offset> _textSlideIn;
-
-  late final Animation<double> _fadeOut;
-  late final Animation<double> _scaleOut;
-
-  bool _navigated = false;
+  Timer? _fallbackTimer;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
 
-    // 3.6-second duration for slow, luxurious out-to-in entrance, hold, and exit
+    // 1. Single 1500ms AnimationController
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3600),
+      duration: const Duration(milliseconds: 1500),
     );
 
-    // Smooth entrance fade-in (0.0 to 0.45)
-    _fadeIn = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
-    );
-
-    // Slow out-to-in scale (starts expanded at 1.25 and glides inward to 1.0)
-    _scaleIn = Tween<double>(begin: 1.25, end: 1.0).animate(
+    // 2. Coordinated Logo Animations (0.0 -> 1.0 across full 1500ms)
+    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+        curve: Curves.easeIn,
       ),
     );
 
-    _slideIn = Tween<Offset>(
-      begin: const Offset(0, 0.06),
+    _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    // 3. Bottom Text Stagger: Interval(0.6, 1.0)
+    _textFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.6, 1.0, curve: Curves.easeIn),
+      ),
+    );
+
+    _textSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.50, curve: Curves.easeOutCubic),
+        curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
       ),
     );
 
-    // Title branding fade & glide in
-    _textFadeIn = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.12, 0.50, curve: Curves.easeOut),
-    );
-
-    _textSlideIn = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.12, 0.50, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    // Out-transition (0.85 to 1.0)
-    _fadeOut = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.85, 1.0, curve: Curves.easeInOutCubic),
-      ),
-    );
-
-    _scaleOut = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.85, 1.0, curve: Curves.easeInOutCubic),
-      ),
-    );
-
-    _controller.forward();
-
+    // 4. Trigger navigation on animation completion
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _navigateNext();
+        _navigateToNext();
       }
+    });
+
+    // 5. Start animation
+    _controller.forward();
+
+    // 6. Safety fallback Timer (2000ms)
+    _fallbackTimer = Timer(const Duration(milliseconds: 2000), () {
+      _navigateToNext();
     });
   }
 
-  void _navigateNext() {
-    if (_navigated || !mounted) return;
-    _navigated = true;
+  void _navigateToNext() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
 
-    // Mark splash as completed so it never reappears during this session / upon login
+    _fallbackTimer?.cancel();
     markSplashCompleted();
 
-    final auth = ref.read(authControllerProvider);
-    final isAuthenticated = auth.value?.isAuthenticated == true;
+    final destination = widget.targetScreen ?? const LoginScreen();
 
-    if (isAuthenticated) {
-      context.go('/home');
-    } else {
-      context.go('/login');
-    }
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _fallbackTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -133,156 +124,58 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       backgroundColor: Colors.white,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _navigateNext, // User can optionally tap to skip
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            // Composite combined opacity and scale:
-            // In: 0 -> 1, Hold: 1, Out: 1 -> 0
-            final currentOpacity = (_fadeIn.value * _fadeOut.value).clamp(0.0, 1.0);
-            final currentScale = _scaleIn.value * _scaleOut.value;
-
-            // Subtle gentle breathing pulse during the settled hold phase
-            final progress = _controller.value;
-            final breathe = (progress > 0.50 && progress < 0.85)
-                ? math.sin((progress - 0.50) / (0.85 - 0.50) * math.pi * 2) * 0.015
-                : 0.0;
-
-            return Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFFFFFFFF),
-                    Color(0xFFFFFDF9),
-                    Color(0xFFFFF6ED),
-                  ],
+        onTap: _navigateToNext,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // 1. Centered brand logo
+              Center(
+                child: FadeTransition(
+                  opacity: _logoFade,
+                  child: ScaleTransition(
+                    scale: _logoScale,
+                    child: Image.asset(
+                      'assets/logo.png',
+                      width: 250,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'assets/branding/nayomis-logo.png',
+                          width: 250,
+                          fit: BoxFit.contain,
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
-              child: SafeArea(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Ambient radial glow behind logo
-                    Opacity(
-                      opacity: currentOpacity * 0.8,
-                      child: Container(
-                        width: 280,
-                        height: 280,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.brandPrimary.withValues(alpha: 0.15),
-                              blurRadius: 70,
-                              spreadRadius: 20,
-                            ),
-                            BoxShadow(
-                              color: AppColors.brandAccent.withValues(alpha: 0.10),
-                              blurRadius: 90,
-                              spreadRadius: 30,
-                            ),
-                          ],
+
+              // 2. Bottom subtitle / app label positioned bottom: 36
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 36,
+                child: Center(
+                  child: FadeTransition(
+                    opacity: _textFade,
+                    child: SlideTransition(
+                      position: _textSlide,
+                      child: Text(
+                        widget.subtitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
+                          color: Colors.black54,
                         ),
                       ),
                     ),
-
-                    // Main Centered Content
-                    Opacity(
-                      opacity: currentOpacity,
-                      child: Transform.scale(
-                        scale: currentScale + breathe,
-                        child: SlideTransition(
-                          position: _slideIn,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Elegant white elevated badge for Logo
-                              Container(
-                                width: 140,
-                                height: 140,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.06),
-                                      blurRadius: 28,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                    BoxShadow(
-                                      color: AppColors.brandPrimary.withValues(alpha: 0.08),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                  border: Border.all(
-                                    color: AppColors.brandPrimary.withValues(alpha: 0.12),
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Image.asset(
-                                  AppAssets.logo,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
-                                ),
-                              ),
-
-                              const SizedBox(height: 28),
-
-                              // Animated Branding Title in original modern bold typeface
-                              FadeTransition(
-                                opacity: _textFadeIn,
-                                child: SlideTransition(
-                                  position: _textSlideIn,
-                                  child: const Text(
-                                    "NAYOMI'S WATERFRONT",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 2.5,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Elegant subtle loading progress bar at bottom
-                    Positioned(
-                      bottom: 48,
-                      child: Opacity(
-                        opacity: currentOpacity,
-                        child: SizedBox(
-                          width: 140,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: LinearProgressIndicator(
-                              value: _controller.value,
-                              minHeight: 2.5,
-                              backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.12),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppColors.brandPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );
