@@ -310,7 +310,7 @@ const ingestReading = async (req, res) => {
 };
 
 const orderNumber = (order) => `#${String(order._id).slice(-6).toUpperCase()}`;
-const orderDeviceId = (order) => order.delivery?.boxId || (TERMINAL_ORDER_STATUSES.includes(order.status) ? null : 'BOX-001');
+const orderDeviceId = (order) => order.delivery?.boxId || (TERMINAL_ORDER_STATUSES.includes(order.status) ? null : 'FOOD-BOX-001');
 
 const verifyOrderAccess = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.orderId)) {
@@ -442,7 +442,7 @@ const getOrderDestination = (order) => {
   const pickupLocation =
     order?.pickupPointId?.name ||
     order?.pickupLocation ||
-    'Pickup Point';
+    'Negombo Distribution Station';
 
   const school =
     order?.pickupPointId?.school?.name ||
@@ -450,7 +450,10 @@ const getOrderDestination = (order) => {
     order?.student?.school ||
     pickupLocation;
 
-  return { school, pickupLocation };
+  return {
+    school: (school || '').replace(/Ave Maria Convent,?\s*/gi, 'Negombo Main Station '),
+    pickupLocation: (pickupLocation || '').replace(/Ave Maria Convent,?\s*/gi, 'Negombo Main Station '),
+  };
 };
 
 const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = '', pickupLocation = '') => {

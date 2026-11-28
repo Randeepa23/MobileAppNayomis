@@ -132,11 +132,12 @@ class TrackingScreen extends ConsumerWidget {
           final destination = snapshot.destination;
           final statusColor = _statusColor(snapshot.deliveryStatus);
           final statusLabel = _statusLabel(snapshot.deliveryStatus);
-          final destinationPlace = (destination?.pickupLocation != null && destination!.pickupLocation.trim().isNotEmpty)
+          final rawPlace = (destination?.pickupLocation != null && destination!.pickupLocation.trim().isNotEmpty)
               ? destination.pickupLocation
               : (destination?.school != null && destination!.school.trim().isNotEmpty)
                   ? destination.school
-                  : 'Pickup Point';
+                  : 'Negombo Distribution Station';
+          final destinationPlace = rawPlace.replaceAll(RegExp(r'Ave Maria Convent,?\s*', caseSensitive: false), 'Negombo Main Station ');
 
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(latestTrackingProvider(orderId).future),
@@ -243,7 +244,7 @@ class TrackingScreen extends ConsumerWidget {
                                 border: Border.all(color: Colors.blue.shade100),
                               ),
                               child: Text(
-                                'Box #${snapshot.deviceId ?? "BOX-001"}',
+                                'Box #${snapshot.deviceId ?? snapshot.boxLocation?.boxId ?? "FOOD-BOX-001"}',
                                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
                               ),
                             ),
@@ -324,23 +325,23 @@ class TrackingScreen extends ConsumerWidget {
                       icon: Icons.thermostat_rounded,
                       iconColor: Colors.deepOrange,
                       title: 'Internal Temp',
-                      value: snapshot.temperatureC != null ? '${snapshot.temperatureC!.toStringAsFixed(1)} °C' : '63.5 °C',
-                      statusText: 'Optimal Safe Zone',
-                      statusColor: Colors.green.shade800,
+                      value: snapshot.temperatureC != null ? '${snapshot.temperatureC!.toStringAsFixed(1)} °C' : '-- °C',
+                      statusText: snapshot.temperatureC != null ? 'Optimal Safe Zone' : 'Waiting for Data',
+                      statusColor: snapshot.temperatureC != null ? Colors.green.shade800 : Colors.grey.shade600,
                     ),
                     _ConditionCard(
                       icon: Icons.water_drop_rounded,
                       iconColor: Colors.blue,
                       title: 'Humidity Level',
-                      value: snapshot.humidityPercent != null ? '${snapshot.humidityPercent!.toStringAsFixed(0)} %' : '51 %',
-                      statusText: 'Optimal Moisture',
-                      statusColor: Colors.blue.shade800,
+                      value: snapshot.humidityPercent != null ? '${snapshot.humidityPercent!.toStringAsFixed(0)} %' : '-- %',
+                      statusText: snapshot.humidityPercent != null ? 'Optimal Moisture' : 'Waiting for Data',
+                      statusColor: snapshot.humidityPercent != null ? Colors.blue.shade800 : Colors.grey.shade600,
                     ),
                     _ConditionCard(
                       icon: Icons.air_rounded,
                       iconColor: Colors.teal,
                       title: 'Food Freshness',
-                      value: snapshot.gasRaw != null ? '${snapshot.gasRaw!.toInt()} ADC' : 'Fresh (Normal)',
+                      value: snapshot.gasRaw != null ? '${snapshot.gasRaw!.toInt()} ADC' : (snapshot.foodSafety?.gasCondition ?? '--'),
                       statusText: 'Safe Fresh Quality',
                       statusColor: Colors.teal.shade800,
                     ),
@@ -364,9 +365,9 @@ class TrackingScreen extends ConsumerWidget {
                       icon: Icons.battery_charging_full_rounded,
                       iconColor: Colors.green,
                       title: 'Smart Box Battery',
-                      value: snapshot.batteryPercent != null ? '${snapshot.batteryPercent!.toInt()} %' : '94 %',
-                      statusText: 'ESP32 IoT Online',
-                      statusColor: Colors.green.shade800,
+                      value: snapshot.batteryPercent != null ? '${snapshot.batteryPercent!.toInt()} %' : '-- %',
+                      statusText: snapshot.batteryPercent != null ? 'ESP32 IoT Online' : 'Telemetry Standby',
+                      statusColor: snapshot.batteryPercent != null ? Colors.green.shade800 : Colors.grey.shade600,
                     ),
                   ],
                 ),
