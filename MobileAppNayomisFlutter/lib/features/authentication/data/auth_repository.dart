@@ -12,7 +12,7 @@ class AuthRepository {
     try {
       final result = await _api.login(email: email, password: password);
       await _storage.writeToken(result.token);
-      return await _api.currentCustomer();
+      return result.customer;
     } catch (error) {
       await _storage.clear();
       throw ApiErrorMapper.from(error);

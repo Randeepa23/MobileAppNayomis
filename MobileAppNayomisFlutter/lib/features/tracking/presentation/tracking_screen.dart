@@ -382,10 +382,15 @@ class _ConditionCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                const SizedBox(width: 4),
                 Container(
                   padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
