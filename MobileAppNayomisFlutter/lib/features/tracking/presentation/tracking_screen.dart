@@ -11,13 +11,13 @@ class TrackingScreen extends ConsumerWidget {
   final String orderId;
 
   Future<void> _launchGoogleMaps(double? lat, double? lng, {String? googleMapsUrl, String? placeName}) async {
-    final targetLat = lat ?? 7.173964;
-    final targetLng = lng ?? 79.861195;
+    final targetLat = lat ?? 7.049666;
+    final targetLng = lng ?? 80.173477;
     final urlString = googleMapsUrl != null && googleMapsUrl.isNotEmpty
         ? googleMapsUrl
         : 'https://www.google.com/maps/search/?api=1&query=$targetLat,$targetLng';
     final googleMapsUri = Uri.parse(urlString);
-    final appleMapsUrl = Uri.parse('maps://?q=${Uri.encodeComponent(placeName ?? "Nayomi\'s Waterfront")}&ll=$targetLat,$targetLng');
+    final appleMapsUrl = Uri.parse('maps://?q=${Uri.encodeComponent(placeName ?? "Delivery Box Location")}&ll=$targetLat,$targetLng');
 
     // 1. Try external application (native Google Maps app or default browser)
     try {
@@ -266,9 +266,18 @@ class TrackingScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 14),
                         if (snapshot.readingId != null) ...[
-                          Text(
-                            'Atlas Reading: ${snapshot.readingId}',
-                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Atlas: ${snapshot.readingId}',
+                                style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                'GPS: ${(snapshot.latitude ?? snapshot.boxLocation?.latitude ?? 7.049666).toStringAsFixed(6)}, ${(snapshot.longitude ?? snapshot.boxLocation?.longitude ?? 80.173477).toStringAsFixed(6)}',
+                                style: TextStyle(fontSize: 10, color: Colors.blue.shade700, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 6),
                         ],

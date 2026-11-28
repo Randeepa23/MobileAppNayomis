@@ -462,8 +462,8 @@ const getOrderDestination = (order) => {
 };
 
 const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = '', pickupLocation = '') => {
-  const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.173964;
-  const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 79.861195;
+  const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.049666;
+  const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 80.173477;
   const destinationName = pickupLocation || targetSchool || 'Delivery Destination';
 
   if (orderStatus === 'delivered' || orderStatus === 'completed') {
@@ -481,7 +481,7 @@ const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = ''
     return {
       place_name: `En Route to ${destinationName}`,
       description: `Delivery Van Transit to ${destinationName}`,
-      area: 'Negombo, Western Province, Sri Lanka',
+      area: 'Western Province, Sri Lanka',
       coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       latitude: lat,
       longitude: lng,
@@ -489,13 +489,13 @@ const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = ''
     };
   }
   return {
-    place_name: "Nayomi's Waterfront Kitchen Hub",
-    description: `Preparing food for delivery to ${destinationName}`,
-    area: '123 Waterfront Drive, Katunayake, Negombo Lagoon, Sri Lanka',
+    place_name: "Nayomi's Smart Delivery Box",
+    description: `Current situated hardware location for ${destinationName}`,
+    area: 'Western Province, Sri Lanka',
     coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     latitude: lat,
     longitude: lng,
-    status: 'At Kitchen Dispatch Hub',
+    status: 'Situated at Device Location',
   };
 };
 
@@ -535,12 +535,12 @@ const getLatestReading = async (req, res) => {
       ]);
     } catch (_) {}
 
-    const effectiveLat = latest?.latitude != null 
-      ? latest.latitude 
-      : (box?.location?.coordinates?.[1] || box?.lastReading?.latitude || 7.173964);
-    const effectiveLng = latest?.longitude != null 
-      ? latest.longitude 
-      : (box?.location?.coordinates?.[0] || box?.lastReading?.longitude || 79.861195);
+    let effectiveLat = latest?.latitude != null ? latest.latitude : null;
+    let effectiveLng = latest?.longitude != null ? latest.longitude : null;
+    if (effectiveLat == null || effectiveLng == null) {
+      effectiveLat = box?.location?.coordinates?.[1] || box?.lastReading?.latitude || 7.049666;
+      effectiveLng = box?.location?.coordinates?.[0] || box?.lastReading?.longitude || 80.173477;
+    }
 
     const foodSafety = computeFoodSafety(latest);
     const destination = getOrderDestination(order);

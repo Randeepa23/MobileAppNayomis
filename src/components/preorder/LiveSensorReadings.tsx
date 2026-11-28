@@ -203,13 +203,13 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                         {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.pickup_location || 'Destination'}`}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {latestData?.box_location?.area || 'Negombo, Western Province'}
+                        {latestData?.box_location?.area || 'Western Province, Sri Lanka'} &bull; <span className="font-semibold text-blue-700">GPS: {Number(latest.latitude || latestData?.box_location?.latitude || 7.049666).toFixed(6)}, {Number(latest.longitude || latestData?.box_location?.longitude || 80.173477).toFixed(6)}</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col justify-center sm:items-end">
                     <a
-                      href={latestData?.box_location?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${latest.latitude || 7.173964},${latest.longitude || 79.861195}`}
+                      href={latestData?.box_location?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${latest.latitude || 7.049666},${latest.longitude || 80.173477}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
