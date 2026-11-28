@@ -804,11 +804,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
                                   {student.phone || (student as any).telephone || (student as any).whatsapp}
                                 </p>
                               )}
-                              {student.school && (
-                                <p className="text-sm text-gray-600">
-                                  School: {student.school}
-                                </p>
-                              )}
                             </div>
                           </div>
                           <div className="text-right">

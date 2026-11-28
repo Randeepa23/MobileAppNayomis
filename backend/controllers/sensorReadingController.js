@@ -417,44 +417,40 @@ const computeFoodSafety = (latest) => {
 };
 
 const getOrderDestination = (order) => {
+  const pickupLocation =
+    order?.pickupPointId?.name ||
+    order?.pickupLocation ||
+    'Pickup Point';
+
   const school =
     order?.pickupPointId?.school?.name ||
     order?.school ||
     order?.student?.school ||
-    order?.pickupLocation ||
-    'Ave Maria Convent, Negombo';
-
-  const pickupLocation =
-    order?.pickupPointId?.name ||
-    order?.pickupLocation ||
-    school;
+    pickupLocation;
 
   return { school, pickupLocation };
 };
 
-const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = 'Ave Maria Convent, Negombo', pickupLocation = '') => {
+const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = '', pickupLocation = '') => {
   const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.2115;
   const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 79.8398;
-  const schoolLabel = targetSchool || 'Ave Maria Convent, Negombo';
-  const pickupLabel = (pickupLocation && pickupLocation !== schoolLabel)
-    ? `${pickupLocation} (${schoolLabel})`
-    : schoolLabel;
+  const destinationName = pickupLocation || targetSchool || 'Delivery Destination';
 
   if (orderStatus === 'delivered' || orderStatus === 'completed') {
     return {
-      place_name: pickupLabel,
-      description: `Delivery Completed at ${schoolLabel}`,
+      place_name: destinationName,
+      description: `Delivery Completed at ${destinationName}`,
       area: 'Negombo, Western Province, Sri Lanka',
       coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       latitude: lat,
       longitude: lng,
-      status: 'Delivered at School',
+      status: 'Delivered',
     };
   }
   if (orderStatus === 'dispatched' || orderStatus === 'in-transit') {
     return {
-      place_name: `En Route to ${schoolLabel}`,
-      description: `Delivery Van Transit to ${schoolLabel}`,
+      place_name: `En Route to ${destinationName}`,
+      description: `Delivery Van Transit to ${destinationName}`,
       area: 'Negombo, Western Province, Sri Lanka',
       coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       latitude: lat,
@@ -464,7 +460,7 @@ const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = 'A
   }
   return {
     place_name: "Nayomi's Waterfront Kitchen Hub",
-    description: `Preparing food for delivery to ${schoolLabel}`,
+    description: `Preparing food for delivery to ${destinationName}`,
     area: 'Negombo Waterfront, Sri Lanka',
     coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     latitude: lat,
@@ -538,7 +534,7 @@ const getLatestReading = async (req, res) => {
           phone: driver?.phone || driver?.whatsapp || '+94 77 123 4567',
           vehicle_model: driver?.vehicleModel || "Nayomi's Waterfront Delivery Van #1",
           vehicle_number: driver?.vehicleNumber || 'WP NB-4521',
-          route: driver?.assignedRoute || 'Ave Maria Convent & Negombo Distribution Route',
+          route: driver?.assignedRoute || 'Negombo Distribution Route',
           assigned_box: deviceId || 'BOX-001',
           dispatch_hub: driver?.dispatchHub || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
         },

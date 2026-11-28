@@ -188,11 +188,11 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><GraduationCap className="h-5 w-5" /></div>
+                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700"><MapPinned className="h-5 w-5" /></div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Destination School</p>
-                      <p className="font-semibold text-gray-900 text-sm">{latestData?.delivery?.school || 'School Pickup Point'}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{latestData?.delivery?.pickup_location || 'Main Entrance'}</p>
+                      <p className="text-xs text-gray-500 font-medium">Delivery Destination</p>
+                      <p className="font-semibold text-gray-900 text-sm">{latestData?.delivery?.pickup_location || latestData?.delivery?.school || 'Pickup Location'}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Window: {latestData?.delivery?.pickup_time || '08:00 - 08:30 AM'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -200,7 +200,7 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Currently Situated At</p>
                       <p className="font-semibold text-gray-900 text-sm">
-                        {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.school || 'School'}`}
+                        {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.pickup_location || 'Destination'}`}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {latestData?.box_location?.area || 'Negombo, Western Province'}
@@ -262,7 +262,7 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
               </ReadingCard>
               <ReadingCard icon={MapPinned} label="Delivery Box Situated At">
                 <span className="font-bold text-sm text-gray-900 block truncate">
-                  {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.school || 'School'}`}
+                  {latestData?.box_location?.place_name || `En Route to ${latestData?.delivery?.pickup_location || 'Destination'}`}
                 </span>
                 {latest.latitude != null && latest.longitude != null && (
                   <div className="mt-1 flex flex-col gap-0.5">

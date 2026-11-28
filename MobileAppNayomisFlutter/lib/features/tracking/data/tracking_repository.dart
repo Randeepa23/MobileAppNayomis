@@ -25,7 +25,7 @@ class DriverInfo {
     phone: json['phone']?.toString() ?? '+94 77 123 4567',
     vehicleModel: json['vehicle_model']?.toString() ?? "Nayomi's Waterfront Delivery Van #1",
     vehicleNumber: json['vehicle_number']?.toString() ?? 'WP NB-4521',
-    route: json['route']?.toString() ?? 'Ave Maria Convent & Negombo Route',
+    route: json['route']?.toString() ?? 'Negombo Delivery Route',
     assignedBox: json['assigned_box']?.toString() ?? 'BOX-001',
     dispatchHub: json['dispatch_hub']?.toString() ?? "Nayomi's Waterfront Kitchen Dispatch, Negombo",
   );
@@ -77,9 +77,9 @@ class DeliveryDestination {
   final String status;
 
   factory DeliveryDestination.fromApi(Map<String, dynamic> json) => DeliveryDestination(
-    recipientName: json['recipient_name']?.toString() ?? 'Student',
-    school: json['school']?.toString() ?? 'Ave Maria Convent, Negombo',
-    pickupLocation: json['pickup_location']?.toString() ?? 'Ave Maria Convent, Negombo',
+    recipientName: json['recipient_name']?.toString() ?? 'Customer',
+    school: json['school']?.toString() ?? '',
+    pickupLocation: json['pickup_location']?.toString() ?? 'Pickup Point',
     pickupTime: json['pickup_time']?.toString() ?? '08:00 - 08:30 AM',
     status: json['status']?.toString() ?? 'in-transit',
   );
@@ -112,7 +112,7 @@ class BoxLocationInfo {
 
   factory BoxLocationInfo.fromApi(Map<String, dynamic> json) => BoxLocationInfo(
     boxId: json['box_id']?.toString() ?? 'BOX-001',
-    placeName: json['place_name']?.toString() ?? 'En Route to Ave Maria Convent, Negombo',
+    placeName: json['place_name']?.toString() ?? 'In Transit',
     description: json['description']?.toString() ?? 'Inside Delivery Van along Negombo Coastal Corridor',
     area: json['area']?.toString() ?? 'Negombo, Western Province, Sri Lanka',
     latitude: (json['latitude'] as num?)?.toDouble(),

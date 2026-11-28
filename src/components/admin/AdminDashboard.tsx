@@ -915,7 +915,7 @@ export const AdminDashboard: React.FC = () => {
             <Card className="border-slate-200 shadow-sm">
               <CardHeader className="pb-3 border-b border-slate-100">
                 <CardTitle className="text-lg font-bold text-slate-900">Registered Student Directory</CardTitle>
-                <CardDescription>View enrolled students, schools, grades, and loyalty points</CardDescription>
+                <CardDescription>View enrolled customers, contact details, and loyalty points</CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
                 {studentsLoading ? (
@@ -937,7 +937,6 @@ export const AdminDashboard: React.FC = () => {
                           <TableHead className="font-semibold text-slate-700">Student Name</TableHead>
                           <TableHead className="font-semibold text-slate-700">Email Address</TableHead>
                           <TableHead className="font-semibold text-slate-700">Telephone / Phone</TableHead>
-                          <TableHead className="font-semibold text-slate-700">School & Grade</TableHead>
                           <TableHead className="font-semibold text-slate-700">Order Count</TableHead>
                           <TableHead className="font-semibold text-slate-700">Loyalty Points</TableHead>
                           <TableHead className="font-semibold text-slate-700">Joined</TableHead>
@@ -967,10 +966,6 @@ export const AdminDashboard: React.FC = () => {
                                   <Edit className="h-3 w-3" />
                                 </button>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-700">
-                              <div className="font-medium">{(student as any).school || 'Registered School'}</div>
-                              <div className="text-slate-400">Grade: {(student as any).grade || 'N/A'}</div>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-slate-50 text-slate-700">

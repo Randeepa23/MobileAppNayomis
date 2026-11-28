@@ -157,20 +157,6 @@ class _StudentProfileView extends ConsumerWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(
-                      Icons.school_outlined,
-                      color: AppColors.brandSecondary,
-                    ),
-                    title: const Text('School'),
-                    subtitle: Text(
-                      (customer.school != null &&
-                              customer.school!.trim().isNotEmpty)
-                          ? customer.school!
-                          : 'Ave Maria Convent, Negombo',
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
                       Icons.card_giftcard_outlined,
                       color: AppColors.brandAccentDark,
                     ),

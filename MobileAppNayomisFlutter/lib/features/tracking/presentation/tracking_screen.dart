@@ -132,11 +132,11 @@ class TrackingScreen extends ConsumerWidget {
           final destination = snapshot.destination;
           final statusColor = _statusColor(snapshot.deliveryStatus);
           final statusLabel = _statusLabel(snapshot.deliveryStatus);
-          final schoolName = (destination?.school != null && destination!.school.trim().isNotEmpty)
-              ? destination.school
-              : (destination?.pickupLocation != null && destination!.pickupLocation.trim().isNotEmpty)
-                  ? destination.pickupLocation
-                  : 'School Pickup Point';
+          final destinationPlace = (destination?.pickupLocation != null && destination!.pickupLocation.trim().isNotEmpty)
+              ? destination.pickupLocation
+              : (destination?.school != null && destination!.school.trim().isNotEmpty)
+                  ? destination.school
+                  : 'Pickup Point';
 
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(latestTrackingProvider(orderId).future),
@@ -186,11 +186,11 @@ class TrackingScreen extends ConsumerWidget {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(Icons.school_outlined, size: 16, color: Colors.black54),
+                            const Icon(Icons.location_on_outlined, size: 16, color: Colors.black54),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                schoolName,
+                                destinationPlace,
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -228,7 +228,7 @@ class TrackingScreen extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                snapshot.boxLocation?.placeName ?? 'En Route to $schoolName',
+                                snapshot.boxLocation?.placeName ?? 'En Route to $destinationPlace',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

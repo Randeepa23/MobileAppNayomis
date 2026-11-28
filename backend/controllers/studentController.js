@@ -48,7 +48,7 @@ const safeDriver = (driver) => {
     vehicleModel: driver.vehicleModel || "Nayomi's Waterfront Delivery Van #1",
     vehicleNumber: driver.vehicleNumber || 'WP NB-4521',
     assignedBox: driver.assignedBox || 'BOX-001',
-    assignedRoute: driver.assignedRoute || 'Ave Maria Convent & Negombo Distribution Route',
+    assignedRoute: driver.assignedRoute || 'Negombo Distribution Route',
     dispatchHub: driver.dispatchHub || "Nayomi's Waterfront Kitchen Dispatch, Negombo",
     dutyStatus: driver.dutyStatus || 'available',
     points: 0,
