@@ -10,27 +10,30 @@ class TrackingScreen extends ConsumerWidget {
   const TrackingScreen({super.key, required this.orderId});
   final String orderId;
 
-  Future<void> _launchGoogleMaps(double? lat, double? lng) async {
-    final targetLat = lat ?? 7.2115;
-    final targetLng = lng ?? 79.8398;
-    final googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$targetLat,$targetLng');
-    final appleMapsUrl = Uri.parse('maps://?q=Delivery+Location&ll=$targetLat,$targetLng');
+  Future<void> _launchGoogleMaps(double? lat, double? lng, {String? googleMapsUrl, String? placeName}) async {
+    final targetLat = lat ?? 7.173964;
+    final targetLng = lng ?? 79.861195;
+    final urlString = googleMapsUrl != null && googleMapsUrl.isNotEmpty
+        ? googleMapsUrl
+        : 'https://www.google.com/maps/search/?api=1&query=$targetLat,$targetLng';
+    final googleMapsUri = Uri.parse(urlString);
+    final appleMapsUrl = Uri.parse('maps://?q=${Uri.encodeComponent(placeName ?? "Nayomi\'s Waterfront")}&ll=$targetLat,$targetLng');
 
     // 1. Try external application (native Google Maps app or default browser)
     try {
-      final launched = await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(googleMapsUri, mode: LaunchMode.externalApplication);
       if (launched) return;
     } catch (_) {}
 
     // 2. Try in-app browser view (Safari / Chrome custom tab inside the app)
     try {
-      final launched = await launchUrl(googleMapsUrl, mode: LaunchMode.inAppBrowserView);
+      final launched = await launchUrl(googleMapsUri, mode: LaunchMode.inAppBrowserView);
       if (launched) return;
     } catch (_) {}
 
     // 3. Try platform default launch
     try {
-      final launched = await launchUrl(googleMapsUrl, mode: LaunchMode.platformDefault);
+      final launched = await launchUrl(googleMapsUri, mode: LaunchMode.platformDefault);
       if (launched) return;
     } catch (_) {}
 
@@ -272,7 +275,12 @@ class TrackingScreen extends ConsumerWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () => _launchGoogleMaps(snapshot.latitude, snapshot.longitude),
+                            onPressed: () => _launchGoogleMaps(
+                              snapshot.latitude ?? snapshot.boxLocation?.latitude,
+                              snapshot.longitude ?? snapshot.boxLocation?.longitude,
+                              googleMapsUrl: snapshot.boxLocation?.googleMapsUrl,
+                              placeName: snapshot.boxLocation?.placeName,
+                            ),
                             icon: const Icon(Icons.map_rounded, size: 18),
                             label: const Text(
                               'Open Live Location in Google Maps',

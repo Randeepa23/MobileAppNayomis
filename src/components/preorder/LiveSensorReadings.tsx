@@ -209,7 +209,7 @@ export const LiveSensorReadings: React.FC<LiveSensorReadingsProps> = ({ active }
                   </div>
                   <div className="flex flex-col justify-center sm:items-end">
                     <a
-                      href={`https://maps.google.com/?q=${latest.latitude || 7.2115},${latest.longitude || 79.8398}`}
+                      href={latestData?.box_location?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${latest.latitude || 7.173964},${latest.longitude || 79.861195}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"

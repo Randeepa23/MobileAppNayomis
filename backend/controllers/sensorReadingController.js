@@ -462,8 +462,8 @@ const getOrderDestination = (order) => {
 };
 
 const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = '', pickupLocation = '') => {
-  const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.2115;
-  const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 79.8398;
+  const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : 7.173964;
+  const lng = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : 79.861195;
   const destinationName = pickupLocation || targetSchool || 'Delivery Destination';
 
   if (orderStatus === 'delivered' || orderStatus === 'completed') {
@@ -491,7 +491,7 @@ const getSituatedLocation = (orderStatus, latitude, longitude, targetSchool = ''
   return {
     place_name: "Nayomi's Waterfront Kitchen Hub",
     description: `Preparing food for delivery to ${destinationName}`,
-    area: 'Negombo Waterfront, Sri Lanka',
+    area: '123 Waterfront Drive, Katunayake, Negombo Lagoon, Sri Lanka',
     coordinates_text: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     latitude: lat,
     longitude: lng,
@@ -537,10 +537,10 @@ const getLatestReading = async (req, res) => {
 
     const effectiveLat = latest?.latitude != null 
       ? latest.latitude 
-      : (box?.location?.coordinates?.[1] || box?.lastReading?.latitude || 7.2115);
+      : (box?.location?.coordinates?.[1] || box?.lastReading?.latitude || 7.173964);
     const effectiveLng = latest?.longitude != null 
       ? latest.longitude 
-      : (box?.location?.coordinates?.[0] || box?.lastReading?.longitude || 79.8398);
+      : (box?.location?.coordinates?.[0] || box?.lastReading?.longitude || 79.861195);
 
     const foodSafety = computeFoodSafety(latest);
     const destination = getOrderDestination(order);
@@ -567,7 +567,7 @@ const getLatestReading = async (req, res) => {
           coordinates_text: boxLocation.coordinates_text,
           status: boxLocation.status,
           map_url: `https://www.openstreetmap.org/?mlat=${boxLocation.latitude}&mlon=${boxLocation.longitude}#map=16/${boxLocation.latitude}/${boxLocation.longitude}`,
-          google_maps_url: `https://maps.google.com/?q=${boxLocation.latitude},${boxLocation.longitude}`,
+          google_maps_url: `https://www.google.com/maps/search/?api=1&query=${boxLocation.latitude},${boxLocation.longitude}`,
         },
         driver: {
           name: driver?.name || 'Sunimal Perera',
