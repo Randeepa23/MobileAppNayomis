@@ -26,6 +26,9 @@ dist-ssr
 # Backend secrets
 backend/.env
 backend/.env.local
+*firebase-adminsdk*.json
+*firebase-service-account*.json
+backend/config/firebase-service-account.json
 
 # Local publishing workspace and generated files
 .publish/

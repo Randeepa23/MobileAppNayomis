@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const SensorReading = require('../models/SensorReading');
 const Alert = require('../models/Alert');
 const Driver = require('../models/Driver');
+const { sendFoodSafetyAlert, sendToTopic } = require('../services/pushNotificationService');
 
 const TERMINAL_ORDER_STATUSES = ['delivered', 'completed', 'cancelled', 'rejected'];
 const ACTIVE_BOX_STATUSES = ['assigned', 'in-transit'];
@@ -276,6 +277,23 @@ const ingestReading = async (req, res) => {
           message: item.message,
           triggerValue: item.triggerValue,
         });
+
+        // Trigger FCM push notifications for food safety breach
+        sendToTopic('food_safety_alerts', {
+          title: `⚠️ Box ${device.boxId}: ${item.type.replace(/_/g, ' ').toUpperCase()}`,
+          body: item.message,
+          data: { boxId: device.boxId, alertType: item.type, orderId: order ? order._id.toString() : '' },
+        }).catch((err) => console.error('FCM topic alert error:', err.message));
+
+        if (order && order.student && order.student.fcmToken) {
+          sendFoodSafetyAlert(order.student.fcmToken, {
+            boxId: device.boxId,
+            alertType: item.type,
+            message: item.message,
+            orderId: order._id,
+            reading,
+          }).catch((err) => console.error('FCM student alert error:', err.message));
+        }
 
         if (Array.isArray(device.alerts)) {
           device.alerts.push({

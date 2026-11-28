@@ -235,6 +235,38 @@ const updateStudentProfile = async (req, res) => {
   }
 };
 
+const updateFcmToken = async (req, res) => {
+  try {
+    const studentId = req.student?.id || req.student?._id;
+    const { token, platform } = req.body;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ success: false, message: 'FCM token is required.' });
+    }
+
+    const student = await Student.findByIdAndUpdate(
+      studentId,
+      {
+        fcmToken: token.trim(),
+        fcmPlatform: ['ios', 'android', 'web'].includes(platform) ? platform : null,
+      },
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student account not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Push notification token registered successfully.',
+    });
+  } catch (error) {
+    console.error('Update FCM token error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to register push notification token.' });
+  }
+};
+
 module.exports = {
   CUSTOMER_JWT_EXPIRES_IN,
   normalizeEmail,
@@ -243,4 +275,5 @@ module.exports = {
   getCurrentStudent,
   getStudentById,
   updateStudentProfile,
+  updateFcmToken,
 };

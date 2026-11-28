@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const Student = require('../models/Student');
 const FoodItem = require('../models/FoodItem');
 const { sendOrderNotification } = require('../services/whatsappService');
+const { sendOrderStatusUpdate, sendToTopic } = require('../services/pushNotificationService');
 
 const placeOrder = async (req, res) => {
   try {
@@ -190,6 +191,16 @@ const updateOrderStatus = async (req, res) => {
     const populatedOrder = await Order.findById(order._id)
       .populate('items.foodItem')
       .populate('student');
+
+    // Send push notification if student has registered an FCM token
+    if (populatedOrder.student?.fcmToken) {
+      sendOrderStatusUpdate(populatedOrder.student.fcmToken, {
+        orderNumber: populatedOrder.orderNumber,
+        status: status.toUpperCase(),
+        message: `Your order #${populatedOrder.orderNumber} is now ${status.toUpperCase()}.`,
+        orderId: populatedOrder._id,
+      }).catch((err) => console.error('FCM order push error:', err.message));
+    }
 
     res.json({ 
       success: true, 

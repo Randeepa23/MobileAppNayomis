@@ -47,7 +47,9 @@ const studentSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'suspended', 'inactive'],
     default: 'active'
-  }
+  },
+  fcmToken: { type: String, default: null },
+  fcmPlatform: { type: String, enum: ['ios', 'android', 'web', null], default: null }
 }, { timestamps: true });
 
 studentSchema.index({ school: 1, grade: 1 });
