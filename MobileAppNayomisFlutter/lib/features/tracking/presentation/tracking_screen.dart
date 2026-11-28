@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design_system/app_colors.dart';
@@ -226,97 +228,14 @@ class TrackingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // SECTION 1: PROFESSIONAL LIVE GPS LOCATION CARD
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: Colors.blue.shade100, width: 1.2),
-                  ),
-                  color: const Color(0xFFF0F7FF),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => _launchGoogleMaps(
-                      snapshot.latitude ?? snapshot.boxLocation?.latitude,
-                      snapshot.longitude ?? snapshot.boxLocation?.longitude,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade600,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.near_me_rounded, color: Colors.white, size: 20),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF10B981),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'BOX #${snapshot.deviceId ?? snapshot.boxLocation?.boxId ?? "FOOD-BOX-001"} • LIVE GPS',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade900,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${(snapshot.latitude ?? snapshot.boxLocation?.latitude ?? 7.049666).toStringAsFixed(6)}, ${(snapshot.longitude ?? snapshot.boxLocation?.longitude ?? 80.173477).toStringAsFixed(6)}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.blue.shade200),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'View Map',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.blue.shade700),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                // SECTION 1: EMBEDDED INTERACTIVE LIVE MAP (PICKME / UBER STYLE)
+                _LiveMapCard(
+                  latitude: snapshot.latitude ?? snapshot.boxLocation?.latitude ?? 7.049666,
+                  longitude: snapshot.longitude ?? snapshot.boxLocation?.longitude ?? 80.173477,
+                  boxId: snapshot.deviceId ?? snapshot.boxLocation?.boxId ?? 'FOOD-BOX-001',
+                  onOpenExternalMaps: () => _launchGoogleMaps(
+                    snapshot.latitude ?? snapshot.boxLocation?.latitude,
+                    snapshot.longitude ?? snapshot.boxLocation?.longitude,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -483,6 +402,233 @@ class _ConditionCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LiveMapCard extends StatefulWidget {
+  const _LiveMapCard({
+    required this.latitude,
+    required this.longitude,
+    required this.boxId,
+    required this.onOpenExternalMaps,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String boxId;
+  final VoidCallback onOpenExternalMaps;
+
+  @override
+  State<_LiveMapCard> createState() => _LiveMapCardState();
+}
+
+class _LiveMapCardState extends State<_LiveMapCard> {
+  late final MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LiveMapCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.latitude != widget.latitude || oldWidget.longitude != widget.longitude) {
+      _mapController.move(LatLng(widget.latitude, widget.longitude), _mapController.camera.zoom);
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final boxPoint = LatLng(widget.latitude, widget.longitude);
+
+    return Container(
+      height: 220,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade100, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: boxPoint,
+              initialZoom: 15.0,
+              minZoom: 6.0,
+              maxZoom: 18.0,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.nayomis.foodapp',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: boxPoint,
+                    width: 70,
+                    height: 70,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black26, blurRadius: 4),
+                            ],
+                          ),
+                          child: Text(
+                            widget.boxId,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade600,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.lunch_dining_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Top Left: Live Status Pill
+          Positioned(
+            top: 10,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'LIVE • ${widget.latitude.toStringAsFixed(4)}, ${widget.longitude.toStringAsFixed(4)}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Top Right: Open External Google Maps Button
+          Positioned(
+            top: 10,
+            right: 10,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.95),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 2,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: widget.onOpenExternalMaps,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_new_rounded, size: 12, color: Colors.blue.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Google Maps',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Bottom Right: Re-center target button
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.95),
+              shape: const CircleBorder(),
+              elevation: 2,
+              child: IconButton(
+                iconSize: 18,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+                tooltip: 'Center on Box',
+                icon: Icon(Icons.my_location_rounded, color: Colors.blue.shade700),
+                onPressed: () {
+                  _mapController.move(boxPoint, 15.0);
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
