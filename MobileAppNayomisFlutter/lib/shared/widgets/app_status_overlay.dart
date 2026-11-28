@@ -18,15 +18,20 @@ class AppStatusOverlay extends ConsumerWidget {
         if (!online)
           Material(
             color: Colors.grey.shade800,
-            child: const SafeArea(
+            child: SafeArea(
               bottom: false,
               child: ListTile(
                 dense: true,
                 textColor: Colors.white,
                 iconColor: Colors.white,
-                leading: Icon(Icons.cloud_off_outlined),
-                title: Text(
+                leading: const Icon(Icons.cloud_off_outlined),
+                title: const Text(
                   'Offline — live restaurant data may be unavailable',
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  tooltip: 'Retry Connection',
+                  onPressed: () => ref.refresh(connectivityProvider),
                 ),
               ),
             ),
