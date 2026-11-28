@@ -138,11 +138,15 @@ class _SplashScreenState extends State<SplashScreen>
                       'assets/logo.png',
                       width: 250,
                       fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      isAntiAlias: true,
                       errorBuilder: (context, error, stackTrace) {
                         return Image.asset(
                           'assets/branding/nayomis-logo.png',
                           width: 250,
                           fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          isAntiAlias: true,
                         );
                       },
                     ),
