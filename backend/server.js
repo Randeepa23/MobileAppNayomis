@@ -52,14 +52,11 @@ app.get('/', (req, res) => {
   res.redirect('/frontend/index.html');
 });
 
-const { startTelemetryHeartbeat } = require('./services/telemetryHeartbeatService');
-
 const PORT = process.env.PORT || 5000;
 
 if (require.main === module) {
   if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is required');
   connectDB().then(() => {
-    startTelemetryHeartbeat();
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   });
 }

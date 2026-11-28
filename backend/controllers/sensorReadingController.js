@@ -133,29 +133,40 @@ const ingestReading = async (req, res) => {
   try {
     const device = req.sensorDevice;
     const orderId = req.body.order_id;
-    const assignedOrderId = device.orderId ? String(device.orderId) : null;
-    if (assignedOrderId !== orderId || !ACTIVE_BOX_STATUSES.includes(device.status)) {
-      console.warn('Rejected sensor request', { reason: 'device_not_assigned', deviceId: device.boxId, ip: req.ip });
-      return res.status(409).json({ success: false, code: 'DEVICE_NOT_ASSIGNED', message: 'This device is not assigned to the requested active order.' });
-    }
+    let order = null;
 
-    const order = await Order.findById(orderId);
-    if (!order) {
-      console.warn('Rejected sensor request', { reason: 'assigned_order_missing', deviceId: device.boxId, ip: req.ip });
-      return res.status(404).json({ success: false, code: 'ORDER_NOT_FOUND', message: 'The assigned order was not found.' });
-    }
-    if (TERMINAL_ORDER_STATUSES.includes(order.status)
-      || !order.delivery?.boxId
-      || order.delivery.boxId !== device.boxId) {
-      console.warn('Rejected sensor request', { reason: 'order_not_active', deviceId: device.boxId, ip: req.ip });
-      return res.status(409).json({ success: false, code: 'ORDER_NOT_ACTIVE', message: 'The device is not assigned to an active delivery for this order.' });
+    if (orderId) {
+      const assignedOrderId = device.orderId ? String(device.orderId) : null;
+      if (assignedOrderId !== orderId || !ACTIVE_BOX_STATUSES.includes(device.status)) {
+        console.warn('Rejected sensor request', { reason: 'device_not_assigned', deviceId: device.boxId, ip: req.ip });
+        return res.status(409).json({ success: false, code: 'DEVICE_NOT_ASSIGNED', message: 'This device is not assigned to the requested active order.' });
+      }
+
+      order = await Order.findById(orderId);
+      if (!order) {
+        console.warn('Rejected sensor request', { reason: 'assigned_order_missing', deviceId: device.boxId, ip: req.ip });
+        return res.status(404).json({ success: false, code: 'ORDER_NOT_FOUND', message: 'The assigned order was not found.' });
+      }
+      if (TERMINAL_ORDER_STATUSES.includes(order.status)
+        || !order.delivery?.boxId
+        || order.delivery.boxId !== device.boxId) {
+        console.warn('Rejected sensor request', { reason: 'order_not_active', deviceId: device.boxId, ip: req.ip });
+        return res.status(409).json({ success: false, code: 'ORDER_NOT_ACTIVE', message: 'The device is not assigned to an active delivery for this order.' });
+      }
+    } else if (device.orderId) {
+      order = await Order.findById(device.orderId);
+    } else {
+      order = await Order.findOne({
+        'delivery.boxId': device.boxId,
+        status: { $in: ['confirmed', 'preparing', 'ready', 'dispatched', 'in-transit'] }
+      }).sort({ createdAt: -1 });
     }
 
     const now = new Date();
     const reading = await SensorReading.create({
       smartBox: device._id,
       deviceId: device.boxId,
-      order: order._id,
+      order: order ? order._id : null,
       temperatureC: value.temperatureC,
       humidityPercent: value.humidityPercent,
       gasRaw: value.gasRaw,
@@ -233,7 +244,7 @@ const ingestReading = async (req, res) => {
       const threeMinsAgo = new Date(Date.now() - 3 * 60 * 1000);
       const existing = await Alert.findOne({
         boxId: device.boxId,
-        orderId: order._id,
+        orderId: order ? order._id : null,
         type: item.type,
         resolved: false,
         createdAt: { $gte: threeMinsAgo },
@@ -242,7 +253,7 @@ const ingestReading = async (req, res) => {
       if (!existing) {
         await Alert.create({
           boxId: device.boxId,
-          orderId: order._id,
+          orderId: order ? order._id : null,
           triggerReading: reading._id,
           type: item.type,
           severity: item.severity,

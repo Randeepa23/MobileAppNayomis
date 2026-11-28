@@ -36,14 +36,12 @@ TinyGPSPlus gps;
 const char* WIFI_SSID     = "Driver_Hotspot";
 const char* WIFI_PASSWORD = "HotspotPassword123";
 
-// 2. Backend Server Endpoint
-// Configured with your Mac's current local Wi-Fi IP address
-const char* SERVER_URL    = "http://192.168.1.150:5000/api/device/sensor-readings";
+// 2. Backend Server Endpoint (Live Render Production Backend)
+const char* SERVER_URL    = "https://nayomis-backend.onrender.com/api/device/sensor-readings";
 
 // 3. Device Identification and Authentication Token
-// The token must match the registered device token in the Admin Dashboard
 const char* DEVICE_ID     = "BOX-001";
-const char* DEVICE_TOKEN  = "your_48_char_hex_device_token_from_admin_dashboard";
+const char* DEVICE_TOKEN  = "nayomi_box_001_token_2026_esp32";
 
 // 4. Telemetry Reporting Interval (in milliseconds)
 const unsigned long REPORT_INTERVAL_MS = 10000; // 10 seconds

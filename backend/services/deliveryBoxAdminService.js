@@ -4,8 +4,8 @@ const Order = require('../models/Order');
 const { DEVICE_ID_PATTERN } = require('../middleware/sensorAuth');
 
 const TERMINAL_ORDER_STATUSES = ['delivered', 'completed', 'cancelled', 'rejected'];
-const ELIGIBLE_ORDER_STATUSES = ['pending', 'validated', 'confirmed', 'preparing', 'ready', 'dispatched'];
-const ASSIGNED_BOX_STATUSES = ['idle', 'assigned', 'in-transit'];
+const ELIGIBLE_ORDER_STATUSES = ['confirmed', 'preparing', 'ready', 'dispatched'];
+const ASSIGNED_BOX_STATUSES = ['assigned', 'in-transit'];
 
 const normalizeDeviceId = (value) => {
   if (typeof value !== 'string') {
