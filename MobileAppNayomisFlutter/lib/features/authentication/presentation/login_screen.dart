@@ -34,8 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _email = TextEditingController(text: widget.prefilledEmail?.isNotEmpty == true ? widget.prefilledEmail! : 'randeepa@gmail.com');
-    _password.text = '123456';
+    _email = TextEditingController(text: widget.prefilledEmail ?? '');
   }
 
   @override
