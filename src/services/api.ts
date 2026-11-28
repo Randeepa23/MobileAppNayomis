@@ -20,10 +20,9 @@ import {
   SensorReadingHistoryResponse
 } from '@/types';
 
-// Use the current origin by default. During development Vite proxies /api to the
-// backend, so phones and other LAN clients do not try to reach their own localhost.
+// Default directly to the live Render backend
 const configuredApiUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-export const API_BASE_URL = (configuredApiUrl || '/api').replace(/\/+$/, '');
+export const API_BASE_URL = (configuredApiUrl || 'https://nayomis-backend.onrender.com/api').replace(/\/+$/, '');
 export const AUTH_SESSION_INVALID_EVENT = 'nayomis:auth-session-invalid';
 
 export class ApiError extends Error {

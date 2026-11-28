@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://nayomis-backend.onrender.com/api';
 
 // Initialize the dashboard
 document.addEventListener('DOMContentLoaded', function() {

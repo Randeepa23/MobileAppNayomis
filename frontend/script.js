@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://nayomis-backend.onrender.com/api';
 
 class StudentFoodApp {
     constructor() {

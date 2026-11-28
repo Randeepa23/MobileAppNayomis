@@ -10,11 +10,9 @@ extension AppEnvironmentConfig on AppEnvironment {
   };
 
   String get defaultApiBaseUrl => switch (this) {
-    AppEnvironment.development => defaultTargetPlatform == TargetPlatform.iOS
-        ? 'http://127.0.0.1:5000/api/'
-        : 'http://192.168.8.137:5000/api/',
-    AppEnvironment.staging => 'https://staging.example.invalid/api/',
-    AppEnvironment.production => 'https://api.example.invalid/api/',
+    AppEnvironment.development => 'https://nayomis-backend.onrender.com/api/',
+    AppEnvironment.staging => 'https://nayomis-backend.onrender.com/api/',
+    AppEnvironment.production => 'https://nayomis-backend.onrender.com/api/',
   };
 
   String get apiBaseUrl {
@@ -24,8 +22,8 @@ extension AppEnvironmentConfig on AppEnvironment {
     if (uri == null || !uri.hasScheme || !value.endsWith('/')) {
       throw StateError('API_BASE_URL must be an absolute URL ending in /.');
     }
-    if (this != AppEnvironment.development && uri.scheme != 'https') {
-      throw StateError('Staging and production API URLs must use HTTPS.');
+    if (uri.scheme != 'https' && !kDebugMode) {
+      throw StateError('Production API URLs must use HTTPS.');
     }
     return value;
   }
